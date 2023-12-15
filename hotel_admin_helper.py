@@ -7,11 +7,18 @@ import docx
 # import openpyxl
 from decimal import Decimal
 from enum import Enum
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from docx2pdf import convert
 
 app = wx.App()
 curr_path = os.getcwd()
+
+# forms for editing
+confirm_form = docx.Document(fr"{curr_path}\resourses\confirm_form.docx")
+
+bill_doc = docx.Document(fr"{curr_path}\resourses\bill_form.docx")
+
+# bill_wc
 
 # interface
 
@@ -300,7 +307,7 @@ class MyFrame(wx.Frame):
     # makers
 
     def getdata(self):
-        current_order = OrderInformation(
+        order_information = OrderInformation(
             name=self.guest_name_text_ctrl.GetValue(),
             date_make=self.make_date_changed(wx.adv.EVT_DATE_CHANGED),
             date_checkin=self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED),
@@ -309,31 +316,49 @@ class MyFrame(wx.Frame):
             current_category=self.category_combobox(wx.EVT_COMBOBOX),
             price_per_night=self.price_accomodation_PN_text_ctrl.GetValue(),
             price_accomodation=str(self.total_price_accomodation()),
-            coont_of_rooms=self.count_of_rooms_combobox(wx.EVT_COMBOBOX),
+            count_of_rooms=self.count_of_rooms_combobox(wx.EVT_COMBOBOX),
             count_of_guests=self.count_of_rooms_combobox(wx.EVT_COMBOBOX),
             tour_tax=str(self.tour_tax_calculator()),
             price_total=str(self.price_total()),
             admin_name=self.admin_combobox(wx.EVT_COMBOBOX)
         )
-        return current_order
+        return asdict(order_information)
+
 
     def make_confirm(self, event):
+        # content: dict[key,value] = asdict(self.getdata())
+        # content_fp = dict(content)
+        # print(content, type(content))
+        # print(content_fp, type(content_fp))
         content = self.getdata()
         for j in content:
-            for table in confirm.tables:
+            for table in confirm_form.tables:
                 for col in table.columns:
                     for cell in col.cells:
                         for paragraph in cell.paragraphs:
                             for run in paragraph.runs:
                                 if run.text.find(j) >= 0:
                                     run.text = run.text.replace(j, content[j])
-                                    style = confirm.styles['Normal']
+                                    style = doc.styles['Normal']
                                     font = style.font
                                     font.name = "Times New Roman"
                                     font.size = docx.shared.Pt(12)
+                                    print(fr"{run.text} replaced")
                             if paragraph.text.find(j) >= 0:
                                 paragraph.text = paragraph.text.replace(j, content[j])
+                                #DONT WORK STOP HERE
+        self.saver_confirm()
+    def saver_confirm(self):
+        confirm_form.save(fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()}.docx")
 
+        convert(fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()}.docx",
+                fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()}.pdf")
+
+    # def create_confirm(self):
+    #     doc.save(fr"{curr_path}\confirms\Conrfirm {name} {data}.docx")
+    #
+    #     convert(fr"{curr_path}\confirms\Conrfirm {name} {data}.docx",
+    #             fr"{curr_path}\confirms\Conrfirm {name} {data}.pdf")
 
     def make_bill(self, event):
         print("Gonna make bill")
@@ -358,6 +383,15 @@ class MyFrame(wx.Frame):
 
     def onQuit(self, event):
         self.Close()
+
+    # files editing and saving
+
+
+
+
+
+
+
 
 
 class PricesDefault:
@@ -493,7 +527,7 @@ class OrderInformation:
     current_category: str
     price_per_night: str
     price_accomodation: str
-    coont_of_rooms: str
+    count_of_rooms: str
     count_of_guests: str
     tour_tax: str
     price_total: str
