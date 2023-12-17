@@ -4,7 +4,7 @@ import wx
 import wx.adv
 import os
 import docx
-# import openpyxl
+import openpyxl
 from decimal import Decimal
 from enum import Enum
 from dataclasses import dataclass, asdict
@@ -16,7 +16,7 @@ curr_path = os.getcwd()
 # forms for editing
 confirm_form = docx.Document(fr"{curr_path}\resourses\confirm_form.docx")
 
-bill_doc = docx.Document(fr"{curr_path}\resourses\bill_form.docx")
+bill_form = docx.Document(fr"{curr_path}\resourses\bill_form.docx")
 
 # bill_wc
 
@@ -38,12 +38,10 @@ class MyFrame(wx.Frame):
         super().__init__(parent, title=title)
 
         # Menu_bar
+        self.content = None
         menubar = wx.MenuBar()
         # File Menu
         fileMenu = wx.Menu()
-
-        # save_menu = wx.MenuItem(fileMenu, APP_SAVE, "&Зберегти\tCtr+S", "Зберегти файл")
-        # fileMenu.Append(save_menu)
 
         fileMenu.AppendSeparator()  # Separator
 
@@ -62,8 +60,7 @@ class MyFrame(wx.Frame):
 
         # menu binds
         self.SetMenuBar(menubar)
-        self.Bind(wx.EVT_MENU, self.onSave, id=APP_SAVE)
-        self.Bind(wx.EVT_MENU, self.onQuit, id=APP_EXIT)
+        self.Bind(wx.EVT_MENU, self.onquit, id=APP_EXIT)
         self.Bind(wx.EVT_MENU, self.show_settings_price_frame, id=CHANGE_PRICES_FRAME)
 
         # main elements
@@ -95,29 +92,26 @@ class MyFrame(wx.Frame):
 
         prices_default.load_from_file("prices_default.pkl")
 
-        guest_name_stat_txt = wx.StaticText(panel, label="Guest name:")  # str
+        guest_name_stat_txt = wx.StaticText(panel, label="Ім'я гостя:")  # str
         main_sizer.Add(guest_name_stat_txt, pos=(1, 0), flag=wx.LEFT, border=10)
         self.guest_name_text_ctrl = wx.TextCtrl(panel)
         main_sizer.Add(self.guest_name_text_ctrl, pos=(1, 1), flag=wx.EXPAND | wx.LEFT, border=10)
-        # done
 
-        date_make_stat_txt = wx.StaticText(panel, label="Make date:")  # datetime
+        date_make_stat_txt = wx.StaticText(panel, label="Дата формування:")  # datetime
         main_sizer.Add(date_make_stat_txt, pos=(2, 0), flag=wx.LEFT, border=10)
         self.date_make = wx.adv.DatePickerCtrl(panel, wx.ID_ANY, wx.DefaultDateTime,
                                                style=wx.adv.DP_DROPDOWN | wx.adv.DP_SHOWCENTURY)
         self.date_make.Bind(wx.adv.EVT_DATE_CHANGED, self.make_date_changed)
         main_sizer.Add(self.date_make, pos=(2, 1), flag=wx.EXPAND | wx.LEFT, border=10)
-        # done
 
-        checkin_date_stat_txt = wx.StaticText(panel, label="CheckIn date:")  # datetime
+        checkin_date_stat_txt = wx.StaticText(panel, label="CheckIn дата:")  # datetime
         main_sizer.Add(checkin_date_stat_txt, pos=(3, 0), flag=wx.LEFT, border=10)
         self.checkin_date = wx.adv.DatePickerCtrl(panel, wx.ID_ANY, wx.DefaultDateTime,
                                                   style=wx.adv.DP_DROPDOWN | wx.adv.DP_SHOWCENTURY)
         self.checkin_date.Bind(wx.adv.EVT_DATE_CHANGED, self.checkin_date_changed)
         main_sizer.Add(self.checkin_date, pos=(3, 1), flag=wx.EXPAND | wx.LEFT, border=10)
-        # done
 
-        checkout_date_stat_txt = wx.StaticText(panel, label="CheckOut date:")  # datetime
+        checkout_date_stat_txt = wx.StaticText(panel, label="CheckOut дата:")  # datetime
         main_sizer.Add(checkout_date_stat_txt, pos=(4, 0), flag=wx.LEFT, border=10)
         self.checkout_date = wx.adv.DatePickerCtrl(panel, wx.ID_ANY, wx.DefaultDateTime,
                                                    style=wx.adv.DP_DROPDOWN | wx.adv.DP_SHOWCENTURY)
@@ -125,59 +119,61 @@ class MyFrame(wx.Frame):
         main_sizer.Add(self.checkout_date, pos=(4, 1), flag=wx.EXPAND | wx.LEFT, border=10)
         self.tomorrow = TODAY + datetime.timedelta(days=1)
         self.checkout_date.SetValue(self.tomorrow)
-        # done
 
-        category_stat_txt = wx.StaticText(panel, label="Category:")  # combobox
+        category_stat_txt = wx.StaticText(panel, label="Категорія номеру:")  # combobox
         main_sizer.Add(category_stat_txt, pos=(5, 0), flag=wx.LEFT, border=10)
         categories = [room_category for room_category in RoomType]
         self.category = wx.ComboBox(panel, choices=categories, style=wx.CB_READONLY)
         main_sizer.Add(self.category, pos=(5, 1), flag=wx.EXPAND | wx.LEFT, border=10)
         self.category.Bind(wx.EVT_COMBOBOX, self.category_combobox)
+        self.category.SetValue(RoomType.Standart)
 
-        # done
-
-        price_accomodation_PN_stat_txt = wx.StaticText(panel, label="Price per night:")  # float
+        price_accomodation_PN_stat_txt = wx.StaticText(panel, label="Ціна за добу:")  # float
         main_sizer.Add(price_accomodation_PN_stat_txt, pos=(6, 0), flag=wx.LEFT, border=10)
         self.price_accomodation_PN_text_ctrl = wx.TextCtrl(panel)
         main_sizer.Add(self.price_accomodation_PN_text_ctrl, pos=(6, 1), flag=wx.EXPAND | wx.LEFT, border=10)
 
-        # done
-
-        total_price_accomodation_stat_txt = wx.StaticText(panel, label="Total price accomodation:")  # float auto-score
+        total_price_accomodation_stat_txt = wx.StaticText(panel, label="Проживання загальна ціна:")  # float auto-score
         main_sizer.Add(total_price_accomodation_stat_txt, pos=(7, 0), flag=wx.LEFT, border=10)
         self.total_price_accomodation_text_ctrl = wx.TextCtrl(panel)
         main_sizer.Add(self.total_price_accomodation_text_ctrl, pos=(7, 1), flag=wx.EXPAND | wx.LEFT, border=10)
+        self.total_price_accomodation_text_ctrl.SetValue("800.00")
 
-        count_of_guest_stat_txt = wx.StaticText(panel, label="Count of guest:")  # combobox
+        count_of_guest_stat_txt = wx.StaticText(panel, label="Кількість гостей:")  # combobox
         main_sizer.Add(count_of_guest_stat_txt, pos=(8, 0), flag=wx.LEFT, border=10)
         count_of_guests = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
         self.count_of_guest = wx.ComboBox(panel, choices=count_of_guests, style=wx.CB_READONLY)
         main_sizer.Add(self.count_of_guest, pos=(8, 1), flag=wx.EXPAND | wx.LEFT, border=10)
-        self.count_of_guest.SetValue("1")
+        self.count_of_guest.SetValue(count_of_guests[0])
         self.count_of_guest.Bind(wx.EVT_COMBOBOX, self.count_of_guest_combobox)
-        # done
 
-        admin_name_stat_txt = wx.StaticText(panel, label="Admin name:")  # combobox
+        admin_name_stat_txt = wx.StaticText(panel, label="Ім'я адміністратора:")  # combobox
         main_sizer.Add(admin_name_stat_txt, pos=(9, 0), flag=wx.LEFT, border=10)
-        admins = ["Аліна", "Влад", "Сергій"]
-        self.admin_name = wx.ComboBox(panel, choices=admins, style=wx.CB_READONLY)
+        admins_names = ["Аліна", "Влад", "Сергій"]
+        self.admin_name = wx.ComboBox(panel, choices=admins_names, style=wx.CB_READONLY)
         main_sizer.Add(self.admin_name, pos=(9, 1), flag=wx.EXPAND | wx.LEFT, border=10)
-        self.admin_name.Bind(wx.EVT_COMBOBOX, self.admin_combobox)
-        # done
+        self.admin_name.Bind(wx.EVT_COMBOBOX, self.administrator_name_combobox)
+        self.admin_name.SetValue("Сергій")
 
-        # optional
+        admin_surname_stat_txt = wx.StaticText(panel, label="Призвіще ініціали адміністратора:")  # combobox
+        main_sizer.Add(admin_surname_stat_txt, pos=(10, 0), flag=wx.LEFT, border=10)
+        admins_surnames = ["Чубенко С.С.", "Тиченко В.С.", "Шевченко А.Є."]
+        self.admin_surname_combobox = wx.ComboBox(panel, choices=admins_surnames, style=wx.CB_READONLY)
+        main_sizer.Add(self.admin_surname_combobox, pos=(10, 1), flag=wx.EXPAND | wx.LEFT, border=10)
+        self.admin_surname_combobox.Bind(wx.EVT_COMBOBOX, self.administrator_surname_combobox)
+        self.admin_surname_combobox.SetValue("Чубенко С.С.")
 
-        tour_tax_stat_txt = wx.StaticText(panel, label="Tour tax total:")  # float auto-score
+        tour_tax_stat_txt = wx.StaticText(panel, label="Тур. збір загально:")  # float auto-score
         main_sizer.Add(tour_tax_stat_txt, pos=(11, 0), flag=wx.LEFT, border=10)
         self.tour_tax_text_ctrl = wx.TextCtrl(panel)
         main_sizer.Add(self.tour_tax_text_ctrl, pos=(11, 1), flag=wx.EXPAND | wx.LEFT, border=10)
-        self.tour_tax_text_ctrl.SetValue(str(self.tour_tax_calculator()))
+        self.tour_tax_text_ctrl.SetValue(str(self.tour_tax_total()))
         self.tour_tax_checkbox = wx.CheckBox(panel)
         main_sizer.Add(self.tour_tax_checkbox, pos=(11, 2), flag=wx.ALL, border=5)
         self.tour_tax_checkbox.Bind(wx.EVT_CHECKBOX, self.checkbox_tour_tax, self.tour_tax_checkbox)
         self.tour_tax_checkbox.SetValue(True)
 
-        count_of_rooms_stat_txt = wx.StaticText(panel, label="Count rooms:")  # combobox
+        count_of_rooms_stat_txt = wx.StaticText(panel, label="Кількість номерів:")  # combobox
         main_sizer.Add(count_of_rooms_stat_txt, pos=(12, 0), flag=wx.LEFT, border=10)
         self.count_of_rooms_list = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
         self.count_of_rooms = wx.ComboBox(panel, choices=self.count_of_rooms_list, style=wx.CB_READONLY)
@@ -190,11 +186,12 @@ class MyFrame(wx.Frame):
         self.count_of_rooms_checkbox.Bind(wx.EVT_CHECKBOX, self.checkbox_count_of_rooms, self.count_of_rooms_checkbox)
         self.count_of_rooms_checkbox.SetValue(False)
 
-        # Info bar:
-        # info_panel = wx.Panel(panel)
-        # guest_name_infopanel_stat_txt = wx.Tex
-
-        # main_sizer.Add(info_panel)
+        payment_type_stat_txt = wx.StaticText(panel, label="Тип розрахунку:")  # combobox
+        main_sizer.Add(payment_type_stat_txt, pos=(13, 0), flag=wx.LEFT, border=10)
+        payment_types = ["Готівка", "Кредитна карта", "Безготівковий переказ"]
+        self.payment_type = wx.ComboBox(panel, choices=payment_types, style=wx.CB_READONLY)
+        main_sizer.Add(self.payment_type, pos=(13, 1), flag=wx.EXPAND | wx.LEFT, border=10)
+        self.payment_type.Bind(wx.EVT_COMBOBOX, self.payment_type_combobox)
 
         panel.SetSizer(main_sizer)
 
@@ -203,32 +200,23 @@ class MyFrame(wx.Frame):
     def make_date_changed(self, event):
         date_make = self.date_make.GetValue()
         date_make = date_make.Format("%d.%m.%y")
-        print(f"make date is {date_make}")
         return date_make
-
-    # done
 
     def checkin_date_changed(self, event):
         checkin_date = self.checkin_date.GetValue()
         self.get_duration_accomodation()
         checkin_date = checkin_date.Format("%d.%m.%y")
-        print(f"Checkindate is {checkin_date}")
         self.total_price_accomodation()
-        self.tour_tax_calculator()
+        self.tour_tax_total()
         return checkin_date
-
-    # done
 
     def checkout_date_changed(self, event):
         checkout_date = self.checkout_date.GetValue()
         self.get_duration_accomodation()
         checkout_date = checkout_date.Format("%d.%m.%y")
-        print(f"Checkoutdate is {checkout_date}")
         self.total_price_accomodation()
-        self.tour_tax_calculator()
+        self.tour_tax_total()
         return checkout_date
-
-    # done
 
     def get_duration_accomodation(self):
         date1 = self.checkin_date.GetValue()
@@ -244,7 +232,6 @@ class MyFrame(wx.Frame):
         if selected_category:
             self.price_accomodation_PN_text_ctrl.SetValue(str(prices_default.prices[selected_category]))
             self.total_price_accomodation()
-        print(f"chosed {selected_category} category")
         return selected_category
 
     # done
@@ -260,30 +247,38 @@ class MyFrame(wx.Frame):
     def count_of_guest_combobox(self, event):
         count_of_guest = self.count_of_guest.GetValue()
         count_of_guest = int(count_of_guest)
-        self.tour_tax_calculator()
-        print(f"guest is {count_of_guest} now")
+        self.tour_tax_total()
         return count_of_guest
 
-    def admin_combobox(self, event):
-        selected_admin = self.admin_name.GetValue()
-        print(f"{selected_admin} admin now")
-        return selected_admin
+    def administrator_name_combobox(self, event):
+        selected_admin_name = self.admin_name.GetValue()
+        return selected_admin_name
+
+    def administrator_surname_combobox(self, event):
+        selected_admin_surname = self.admin_surname_combobox.GetValue()
+        return selected_admin_surname
 
     def count_of_rooms_combobox(self, event):
         count_of_rooms = self.count_of_rooms.GetValue()
-        print(f"rooms {count_of_rooms}")
         return count_of_rooms
 
-    def tour_tax_calculator(self):
+    def tour_tax_count(self):
+        tour_tax_count = Decimal((int(self.count_of_guest.GetValue()) * int(self.get_duration_accomodation())))
+        return tour_tax_count
+
+    def tour_tax_total(self):
         tour_tax_total = Decimal(int(self.count_of_guest.GetValue()) * int(self.get_duration_accomodation()) *
                                  float(prices_default.prices[RoomType.TourTax])).quantize(TWOPLACES)
         self.tour_tax_text_ctrl.SetValue(str(tour_tax_total))
-        print(tour_tax_total, type(tour_tax_total))
         return tour_tax_total
 
     def price_total(self):
-        price_total = Decimal(self.total_price_accomodation() + self.tour_tax_calculator())
+        price_total = Decimal(self.total_price_accomodation() + self.tour_tax_total())
         return price_total
+
+    def payment_type_combobox(self, event):
+        payment_type = self.payment_type.GetValue()
+        return payment_type
 
     # Checbox for tour tax and count of rooms
     def checkbox_tour_tax(self, event):
@@ -302,14 +297,13 @@ class MyFrame(wx.Frame):
             self.count_of_rooms.SetValue(self.count_of_rooms_list[0])
             self.count_of_rooms_combobox(event)
             self.count_of_rooms.Disable()
-        # rooms_summ = int(self.count_of_rooms.GetValue()) * int(self.total_price_accomodation_text_ctrl.GetValue())
 
     # makers
 
     def getdata(self):
         order_information = OrderInformation(
+            datemake=self.make_date_changed(wx.adv.EVT_DATE_CHANGED),
             name=self.guest_name_text_ctrl.GetValue(),
-            date_make=self.make_date_changed(wx.adv.EVT_DATE_CHANGED),
             date_checkin=self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED),
             date_checkout=self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED),
             duration=self.get_duration_accomodation(),
@@ -318,50 +312,68 @@ class MyFrame(wx.Frame):
             price_accomodation=str(self.total_price_accomodation()),
             count_of_rooms=self.count_of_rooms_combobox(wx.EVT_COMBOBOX),
             count_of_guests=self.count_of_rooms_combobox(wx.EVT_COMBOBOX),
-            tour_tax=str(self.tour_tax_calculator()),
+            tour_tax_price=str(prices_default.prices[RoomType.TourTax]),
+            tour_tax_count=str(self.tour_tax_count()),
+            tour_tax_total=str(self.tour_tax_total()),
             price_total=str(self.price_total()),
-            admin_name=self.admin_combobox(wx.EVT_COMBOBOX)
+            totalpriceend=str(self.price_total()),
+            administrator=self.administrator_name_combobox(wx.EVT_COMBOBOX),
+            admininnitials=self.administrator_surname_combobox(wx.EVT_COMBOBOX),
+            payment_type=self.payment_type_combobox(wx.EVT_COMBOBOX)
         )
         return asdict(order_information)
 
-
     def make_confirm(self, event):
-        # content: dict[key,value] = asdict(self.getdata())
-        # content_fp = dict(content)
-        # print(content, type(content))
-        # print(content_fp, type(content_fp))
-        content = self.getdata()
-        for j in content:
+        self.content = self.getdata()
+        for j in self.content:
             for table in confirm_form.tables:
+                for col in table.columns:
+                    for cell in col.cells:
+                        for paragraph in cell.paragraphs:
+                            # if paragraph.text.find(j) >= 0:
+                            #     # paragraph.text = paragraph.text.replace(j, str(self.content[j]))
+                            for run in paragraph.runs:
+                                if run.text.find(j) >= 0:
+                                    run.text = run.text.replace(j, str(self.content[j]))
+                                    style = confirm_form.styles['Normal']
+                                    font = style.font
+                                    font.name = "Times New Roman"
+                                    font.size = docx.shared.Pt(12)
+        self.saver_confirm()
+
+    def saver_confirm(self):
+        if not os.path.exists(fr"{curr_path}\confirms"):
+            os.makedirs(fr"{curr_path}\confirms")
+        confirm_form.save(
+            fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx")
+
+        convert(fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
+                fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
+
+    def make_bill(self, event):
+        self.content = self.getdata()
+        for j in self.content:
+            for table in bill_form.tables:
                 for col in table.columns:
                     for cell in col.cells:
                         for paragraph in cell.paragraphs:
                             for run in paragraph.runs:
                                 if run.text.find(j) >= 0:
-                                    run.text = run.text.replace(j, content[j])
-                                    style = doc.styles['Normal']
+                                    run.text = run.text.replace(j, str(self.content[j]))
+                                    style = confirm_form.styles['Normal']
                                     font = style.font
                                     font.name = "Times New Roman"
                                     font.size = docx.shared.Pt(12)
-                                    print(fr"{run.text} replaced")
-                            if paragraph.text.find(j) >= 0:
-                                paragraph.text = paragraph.text.replace(j, content[j])
-                                #DONT WORK STOP HERE
-        self.saver_confirm()
-    def saver_confirm(self):
-        confirm_form.save(fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()}.docx")
+        self.saver_bill()
 
-        convert(fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()}.docx",
-                fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()}.pdf")
+    def saver_bill(self):
+        if not os.path.exists(fr"{curr_path}\bills"):
+            os.makedirs(fr"{curr_path}\bills")
+        bill_form.save(
+            fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx")
 
-    # def create_confirm(self):
-    #     doc.save(fr"{curr_path}\confirms\Conrfirm {name} {data}.docx")
-    #
-    #     convert(fr"{curr_path}\confirms\Conrfirm {name} {data}.docx",
-    #             fr"{curr_path}\confirms\Conrfirm {name} {data}.pdf")
-
-    def make_bill(self, event):
-        print("Gonna make bill")
+        convert(fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
+                fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
 
     def make_bill_wc(self, event):
         print("Gonna make bill without cash")
@@ -378,20 +390,13 @@ class MyFrame(wx.Frame):
         print("frame time")
 
     # Main menu bar func
-    def onSave(self, event):
-        print("gonna save")
+    # def onSave(self, event):
+    #     print("gonna save")
 
-    def onQuit(self, event):
+    def onquit(self, event):
         self.Close()
 
     # files editing and saving
-
-
-
-
-
-
-
 
 
 class PricesDefault:
@@ -520,7 +525,7 @@ prices_default = PricesDefault({
 @dataclass
 class OrderInformation:
     name: str
-    date_make: str
+    datemake: str
     date_checkin: str
     date_checkout: str
     duration: str
@@ -529,9 +534,15 @@ class OrderInformation:
     price_accomodation: str
     count_of_rooms: str
     count_of_guests: str
-    tour_tax: str
+    tour_tax_price: str
+    tour_tax_count: str
+    tour_tax_total: str
     price_total: str
-    admin_name: str
+    totalpriceend: str
+    administrator: str
+    admininnitials: str
+    payment_type: str
+
     # company_name: str
     # number_of_bill: int
 
