@@ -1,7 +1,7 @@
 
-NUMBER_OF_BILL Номер Б/Г рахунка @
-COMPANY_NAME Назва компанії @
-COMPANY_OWNER Власник компанії @
-COMPANY_REQUSITES Реквізити компанії @
-SUMM_BY_WORDS Сумма прописом @
-COUNT_SERVICES_POSITIONS Кількість позицій  @
+NUMBEROFBILL Номер Б/Г рахунка @
+COMPANY Назва компанії @
+COMPOWNER Власник компанії @
+COMPREQUSРеквізити компанії @
+SUMMWORDS Сумма прописом @
+COUNTSERVICESPOSITIONS Кількість позицій  @

@@ -92,26 +92,26 @@ class MyFrame(wx.Frame):
 
         prices_default.load_from_file("prices_default.pkl")
 
-        guest_name_stat_txt = wx.StaticText(panel, label="Ім'я гостя:")  # str
+        guest_name_stat_txt = wx.StaticText(panel, label="Ім'я гостя:")
         main_sizer.Add(guest_name_stat_txt, pos=(1, 0), flag=wx.LEFT, border=10)
         self.guest_name_text_ctrl = wx.TextCtrl(panel)
         main_sizer.Add(self.guest_name_text_ctrl, pos=(1, 1), flag=wx.EXPAND | wx.LEFT, border=10)
 
-        date_make_stat_txt = wx.StaticText(panel, label="Дата формування:")  # datetime
+        date_make_stat_txt = wx.StaticText(panel, label="Дата формування:")
         main_sizer.Add(date_make_stat_txt, pos=(2, 0), flag=wx.LEFT, border=10)
         self.date_make = wx.adv.DatePickerCtrl(panel, wx.ID_ANY, wx.DefaultDateTime,
                                                style=wx.adv.DP_DROPDOWN | wx.adv.DP_SHOWCENTURY)
         self.date_make.Bind(wx.adv.EVT_DATE_CHANGED, self.make_date_changed)
         main_sizer.Add(self.date_make, pos=(2, 1), flag=wx.EXPAND | wx.LEFT, border=10)
 
-        checkin_date_stat_txt = wx.StaticText(panel, label="CheckIn дата:")  # datetime
+        checkin_date_stat_txt = wx.StaticText(panel, label="CheckIn дата:")
         main_sizer.Add(checkin_date_stat_txt, pos=(3, 0), flag=wx.LEFT, border=10)
         self.checkin_date = wx.adv.DatePickerCtrl(panel, wx.ID_ANY, wx.DefaultDateTime,
                                                   style=wx.adv.DP_DROPDOWN | wx.adv.DP_SHOWCENTURY)
         self.checkin_date.Bind(wx.adv.EVT_DATE_CHANGED, self.checkin_date_changed)
         main_sizer.Add(self.checkin_date, pos=(3, 1), flag=wx.EXPAND | wx.LEFT, border=10)
 
-        checkout_date_stat_txt = wx.StaticText(panel, label="CheckOut дата:")  # datetime
+        checkout_date_stat_txt = wx.StaticText(panel, label="CheckOut дата:")
         main_sizer.Add(checkout_date_stat_txt, pos=(4, 0), flag=wx.LEFT, border=10)
         self.checkout_date = wx.adv.DatePickerCtrl(panel, wx.ID_ANY, wx.DefaultDateTime,
                                                    style=wx.adv.DP_DROPDOWN | wx.adv.DP_SHOWCENTURY)
@@ -120,71 +120,79 @@ class MyFrame(wx.Frame):
         self.tomorrow = TODAY + datetime.timedelta(days=1)
         self.checkout_date.SetValue(self.tomorrow)
 
-        category_stat_txt = wx.StaticText(panel, label="Категорія номеру:")  # combobox
+        category_stat_txt = wx.StaticText(panel, label="Категорія номеру:")
         main_sizer.Add(category_stat_txt, pos=(5, 0), flag=wx.LEFT, border=10)
         categories = [room_category for room_category in RoomType]
         self.category = wx.ComboBox(panel, choices=categories, style=wx.CB_READONLY)
         main_sizer.Add(self.category, pos=(5, 1), flag=wx.EXPAND | wx.LEFT, border=10)
         self.category.Bind(wx.EVT_COMBOBOX, self.category_combobox)
-        self.category.SetValue(RoomType.Standart)
+        default_category = RoomType.Standart
+        self.category.SetValue(default_category)
 
-        price_accomodation_PN_stat_txt = wx.StaticText(panel, label="Ціна за добу:")  # float
+        price_accomodation_PN_stat_txt = wx.StaticText(panel, label="Ціна за добу:")
         main_sizer.Add(price_accomodation_PN_stat_txt, pos=(6, 0), flag=wx.LEFT, border=10)
         self.price_accomodation_PN_text_ctrl = wx.TextCtrl(panel)
         main_sizer.Add(self.price_accomodation_PN_text_ctrl, pos=(6, 1), flag=wx.EXPAND | wx.LEFT, border=10)
+        self.price_accomodation_PN_text_ctrl.Bind(wx.EVT_TEXT, self.price_pernight_changed,
+                                                  self.price_accomodation_PN_text_ctrl)
+        self.price_accomodation_PN_text_ctrl.SetValue(prices_default.prices[self.category.GetValue()])
 
         total_price_accomodation_stat_txt = wx.StaticText(panel, label="Проживання загальна ціна:")  # float auto-score
         main_sizer.Add(total_price_accomodation_stat_txt, pos=(7, 0), flag=wx.LEFT, border=10)
         self.total_price_accomodation_text_ctrl = wx.TextCtrl(panel)
         main_sizer.Add(self.total_price_accomodation_text_ctrl, pos=(7, 1), flag=wx.EXPAND | wx.LEFT, border=10)
-        self.total_price_accomodation_text_ctrl.SetValue("800.00")
 
-        count_of_guest_stat_txt = wx.StaticText(panel, label="Кількість гостей:")  # combobox
+        count_of_guest_stat_txt = wx.StaticText(panel, label="Кількість гостей:")
         main_sizer.Add(count_of_guest_stat_txt, pos=(8, 0), flag=wx.LEFT, border=10)
         count_of_guests = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
         self.count_of_guest = wx.ComboBox(panel, choices=count_of_guests, style=wx.CB_READONLY)
         main_sizer.Add(self.count_of_guest, pos=(8, 1), flag=wx.EXPAND | wx.LEFT, border=10)
         self.count_of_guest.SetValue(count_of_guests[0])
-        self.count_of_guest.Bind(wx.EVT_COMBOBOX, self.count_of_guest_combobox)
-
-        admin_name_stat_txt = wx.StaticText(panel, label="Ім'я адміністратора:")  # combobox
-        main_sizer.Add(admin_name_stat_txt, pos=(9, 0), flag=wx.LEFT, border=10)
-        admins_names = ["Аліна", "Влад", "Сергій"]
-        self.admin_name = wx.ComboBox(panel, choices=admins_names, style=wx.CB_READONLY)
-        main_sizer.Add(self.admin_name, pos=(9, 1), flag=wx.EXPAND | wx.LEFT, border=10)
-        self.admin_name.Bind(wx.EVT_COMBOBOX, self.administrator_name_combobox)
-        self.admin_name.SetValue("Сергій")
-
-        admin_surname_stat_txt = wx.StaticText(panel, label="Призвіще ініціали адміністратора:")  # combobox
-        main_sizer.Add(admin_surname_stat_txt, pos=(10, 0), flag=wx.LEFT, border=10)
-        admins_surnames = ["Чубенко С.С.", "Тиченко В.С.", "Шевченко А.Є."]
-        self.admin_surname_combobox = wx.ComboBox(panel, choices=admins_surnames, style=wx.CB_READONLY)
-        main_sizer.Add(self.admin_surname_combobox, pos=(10, 1), flag=wx.EXPAND | wx.LEFT, border=10)
-        self.admin_surname_combobox.Bind(wx.EVT_COMBOBOX, self.administrator_surname_combobox)
-        self.admin_surname_combobox.SetValue("Чубенко С.С.")
-
-        tour_tax_stat_txt = wx.StaticText(panel, label="Тур. збір загально:")  # float auto-score
-        main_sizer.Add(tour_tax_stat_txt, pos=(11, 0), flag=wx.LEFT, border=10)
-        self.tour_tax_text_ctrl = wx.TextCtrl(panel)
-        main_sizer.Add(self.tour_tax_text_ctrl, pos=(11, 1), flag=wx.EXPAND | wx.LEFT, border=10)
-        self.tour_tax_text_ctrl.SetValue(str(self.tour_tax_total()))
-        self.tour_tax_checkbox = wx.CheckBox(panel)
-        main_sizer.Add(self.tour_tax_checkbox, pos=(11, 2), flag=wx.ALL, border=5)
-        self.tour_tax_checkbox.Bind(wx.EVT_CHECKBOX, self.checkbox_tour_tax, self.tour_tax_checkbox)
-        self.tour_tax_checkbox.SetValue(True)
+        self.count_of_guest.Bind(wx.EVT_COMBOBOX, self.count_of_guest_combobox, self.count_of_guest)
+        self.count_of_guest.Bind(wx.EVT_COMBOBOX, self.tour_tax_total, self.count_of_guest)
 
         count_of_rooms_stat_txt = wx.StaticText(panel, label="Кількість номерів:")  # combobox
-        main_sizer.Add(count_of_rooms_stat_txt, pos=(12, 0), flag=wx.LEFT, border=10)
+        main_sizer.Add(count_of_rooms_stat_txt, pos=(9, 0), flag=wx.LEFT, border=10)
         self.count_of_rooms_list = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
         self.count_of_rooms = wx.ComboBox(panel, choices=self.count_of_rooms_list, style=wx.CB_READONLY)
-        main_sizer.Add(self.count_of_rooms, pos=(12, 1), flag=wx.EXPAND | wx.LEFT, border=10)
+        main_sizer.Add(self.count_of_rooms, pos=(9, 1), flag=wx.EXPAND | wx.LEFT, border=10)
         self.count_of_rooms.Bind(wx.EVT_COMBOBOX, self.count_of_rooms_combobox, self.count_of_rooms)
+        self.count_of_rooms.Bind(wx.EVT_COMBOBOX, self.total_price_accomodation, self.count_of_rooms)
         self.count_of_rooms.SetValue("1")
         self.count_of_rooms.Disable()
         self.count_of_rooms_checkbox = wx.CheckBox(panel)
-        main_sizer.Add(self.count_of_rooms_checkbox, pos=(12, 2), flag=wx.ALL, border=5)
+        main_sizer.Add(self.count_of_rooms_checkbox, pos=(9, 2), flag=wx.ALL, border=5)
         self.count_of_rooms_checkbox.Bind(wx.EVT_CHECKBOX, self.checkbox_count_of_rooms, self.count_of_rooms_checkbox)
         self.count_of_rooms_checkbox.SetValue(False)
+        self.total_price_accomodation_text_ctrl.SetValue(str(self.total_price_accomodation(wx.EVT_COMBOBOX)))
+
+        tour_tax_stat_txt = wx.StaticText(panel, label="Туристичний збір:")
+        main_sizer.Add(tour_tax_stat_txt, pos=(10, 0), flag=wx.LEFT, border=10)
+        self.tour_tax_text_ctrl = wx.TextCtrl(panel)
+        main_sizer.Add(self.tour_tax_text_ctrl, pos=(10, 1), flag=wx.EXPAND | wx.LEFT, border=10)
+        self.tour_tax_text_ctrl.SetValue(str(self.tour_tax_total(wx.EVT_TEXT)))
+        self.tour_tax_checkbox = wx.CheckBox(panel)
+        main_sizer.Add(self.tour_tax_checkbox, pos=(10, 2), flag=wx.ALL, border=5)
+        self.tour_tax_checkbox.Bind(wx.EVT_CHECKBOX, self.checkbox_tour_tax, self.tour_tax_checkbox)
+        self.tour_tax_checkbox.SetValue(True)
+
+        breakfest_count_stat_txt = wx.StaticText(panel, label="Кількість сніданків:")
+        main_sizer.Add(breakfest_count_stat_txt, pos=(11, 0), flag=wx.LEFT, border=10)
+        self.breakfest_count_list = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", ""]
+        self.breakfest_count_combobox = wx.ComboBox(panel, choices=self.breakfest_count_list, style=wx.CB_READONLY)
+        main_sizer.Add(self.breakfest_count_combobox, pos=(11, 1), flag=wx.EXPAND | wx.LEFT, border=10)
+        self.breakfest_count_combobox.Bind(wx.EVT_COMBOBOX, self.breakfest_total, self.breakfest_count_combobox)
+        self.breakfest_count_combobox.Disable()
+        self.breakfest_checkbox = wx.CheckBox(panel)
+        main_sizer.Add(self.breakfest_checkbox, pos=(11, 2), flag=wx.ALL, border=5)
+        self.breakfest_checkbox.Bind(wx.EVT_CHECKBOX, self.checkbox_breakfest, self.breakfest_checkbox)
+        self.breakfest_checkbox.SetValue(False)
+
+        breakfest_total_stat_txt = wx.StaticText(panel, label="Сніданки загально:")
+        main_sizer.Add(breakfest_total_stat_txt, pos=(12, 0), flag=wx.LEFT, border=10)
+        self.breakfest = wx.TextCtrl(panel)
+        main_sizer.Add(self.breakfest, pos=(12, 1), flag=wx.EXPAND | wx.LEFT, border=10)
+        self.breakfest.Disable()
 
         payment_type_stat_txt = wx.StaticText(panel, label="Тип розрахунку:")  # combobox
         main_sizer.Add(payment_type_stat_txt, pos=(13, 0), flag=wx.LEFT, border=10)
@@ -192,6 +200,49 @@ class MyFrame(wx.Frame):
         self.payment_type = wx.ComboBox(panel, choices=payment_types, style=wx.CB_READONLY)
         main_sizer.Add(self.payment_type, pos=(13, 1), flag=wx.EXPAND | wx.LEFT, border=10)
         self.payment_type.Bind(wx.EVT_COMBOBOX, self.payment_type_combobox)
+
+        admin_name_stat_txt = wx.StaticText(panel, label="Ім'я адміністратора:")
+        main_sizer.Add(admin_name_stat_txt, pos=(14, 0), flag=wx.LEFT, border=10)
+        admins_names = ["Аліна", "Влад", "Сергій"]
+        self.admin_name = wx.ComboBox(panel, choices=admins_names, style=wx.CB_READONLY)
+        main_sizer.Add(self.admin_name, pos=(14, 1), flag=wx.EXPAND | wx.LEFT, border=10)
+        self.admin_name.Bind(wx.EVT_COMBOBOX, self.administrator_name_combobox)
+        self.admin_name.SetValue("Сергій")
+
+        admin_surname_stat_txt = wx.StaticText(panel, label="Призвіще ініціали адміністратора:")
+        main_sizer.Add(admin_surname_stat_txt, pos=(15, 0), flag=wx.LEFT, border=10)
+        admins_surnames = ["Чубенко С.С.", "Тиченко В.С.", "Шевченко А.Є."]
+        self.admin_surname_combobox = wx.ComboBox(panel, choices=admins_surnames, style=wx.CB_READONLY)
+        main_sizer.Add(self.admin_surname_combobox, pos=(15, 1), flag=wx.EXPAND | wx.LEFT, border=10)
+        self.admin_surname_combobox.Bind(wx.EVT_COMBOBOX, self.administrator_surname_combobox)
+        self.admin_surname_combobox.SetValue("Чубенко С.С.")
+
+        # without cash and acts
+
+        numberofbill_stat_txt = wx.StaticText(panel, label="↓ Номер рахунку ↓")
+        main_sizer.Add(numberofbill_stat_txt, pos=(1, 2), flag=wx.EXPAND | wx.LEFT | wx.CENTRE, border=10)
+        self.numberofbill = wx.TextCtrl(panel)
+        main_sizer.Add(self.numberofbill, pos=(2, 2), flag=wx.EXPAND | wx.LEFT, border=10)
+
+        company_stat_txt = wx.StaticText(panel, label="↓ Назва компанії ↓")
+        main_sizer.Add(company_stat_txt, pos=(3, 2), flag=wx.EXPAND | wx.LEFT, border=10)
+        self.company = wx.TextCtrl(panel)
+        main_sizer.Add(self.company, pos=(4, 2), flag=wx.EXPAND | wx.LEFT, border=10)
+
+        compowner_stat_txt = wx.StaticText(panel, label="↓ Власник/Диерктор Компанії ↓")
+        main_sizer.Add(compowner_stat_txt, pos=(5, 2), flag=wx.EXPAND | wx.LEFT, border=10)
+        self.compowner = wx.TextCtrl(panel)
+        main_sizer.Add(self.compowner, pos=(6, 2), flag=wx.EXPAND | wx.LEFT, border=10)
+
+        countservpos_stat_txt = wx.StaticText(panel, label="↓ Усього найменувань ↓")
+        main_sizer.Add(countservpos_stat_txt, pos=(7, 2), flag=wx.EXPAND | wx.LEFT, border=10)
+        self.countservpos = wx.TextCtrl(panel)
+        main_sizer.Add(self.countservpos, pos=(8, 2), flag=wx.EXPAND | wx.LEFT, border=10)
+
+        comprequs_stat_txt = wx.StaticText(panel, label="↓ Реквізити компанії ↓")
+        main_sizer.Add(comprequs_stat_txt, pos=(13, 2), flag=wx.EXPAND | wx.LEFT | wx.BOTTOM, border=10)
+        self.comprequs = wx.TextCtrl(panel)
+        main_sizer.Add(self.comprequs, pos=(14, 2), span=(6, 2), flag=wx.EXPAND | wx.ALL, border=10)
 
         panel.SetSizer(main_sizer)
 
@@ -204,18 +255,18 @@ class MyFrame(wx.Frame):
 
     def checkin_date_changed(self, event):
         checkin_date = self.checkin_date.GetValue()
-        self.get_duration_accomodation()
         checkin_date = checkin_date.Format("%d.%m.%y")
-        self.total_price_accomodation()
-        self.tour_tax_total()
+        self.get_duration_accomodation()
+        self.total_price_accomodation(wx.adv.EVT_DATE_CHANGED)
+        self.tour_tax_total(wx.EVT_COMBOBOX)
         return checkin_date
 
     def checkout_date_changed(self, event):
         checkout_date = self.checkout_date.GetValue()
-        self.get_duration_accomodation()
         checkout_date = checkout_date.Format("%d.%m.%y")
-        self.total_price_accomodation()
-        self.tour_tax_total()
+        self.get_duration_accomodation()
+        self.total_price_accomodation(wx.adv.EVT_DATE_CHANGED)
+        self.tour_tax_total(wx.EVT_COMBOBOX)
         return checkout_date
 
     def get_duration_accomodation(self):
@@ -225,68 +276,38 @@ class MyFrame(wx.Frame):
         duration_accomodation = delta.GetDays()
         return duration_accomodation
 
-    # done
-
     def category_combobox(self, event):
         selected_category = self.category.GetValue()
         if selected_category:
             self.price_accomodation_PN_text_ctrl.SetValue(str(prices_default.prices[selected_category]))
-            self.total_price_accomodation()
+            self.total_price_accomodation(wx.EVT_COMBOBOX)
         return selected_category
 
-    # done
+    def price_pernight_changed(self, event):
+        price_accomodation_PN = self.price_accomodation_PN_text_ctrl.GetValue()
+        return price_accomodation_PN
 
-    def total_price_accomodation(self):
+    def total_price_accomodation(self, event):
         duration_accomodation = self.get_duration_accomodation()
-        price_accomodation_PN_text_ctrl = self.price_accomodation_PN_text_ctrl.GetValue()
-        total_price_accomodation = int(duration_accomodation) * float(price_accomodation_PN_text_ctrl)
-        total_price_accomodation = Decimal(total_price_accomodation).quantize(TWOPLACES)
+        price_accomodation_PN = self.price_pernight_changed(wx.EVT_TEXT)
+        count_of_rooms = self.count_of_rooms_combobox(wx.EVT_COMBOBOX)
+        total_price_accomodation = Decimal(int(duration_accomodation) * float(price_accomodation_PN) *
+                                           int(count_of_rooms)).quantize(TWOPLACES)
         self.total_price_accomodation_text_ctrl.SetValue(str(total_price_accomodation))
         return total_price_accomodation
 
     def count_of_guest_combobox(self, event):
-        count_of_guest = self.count_of_guest.GetValue()
-        count_of_guest = int(count_of_guest)
-        self.tour_tax_total()
+        count_of_guest = int(self.count_of_guest.GetValue())
         return count_of_guest
 
-    def administrator_name_combobox(self, event):
-        selected_admin_name = self.admin_name.GetValue()
-        return selected_admin_name
-
-    def administrator_surname_combobox(self, event):
-        selected_admin_surname = self.admin_surname_combobox.GetValue()
-        return selected_admin_surname
-
     def count_of_rooms_combobox(self, event):
-        count_of_rooms = self.count_of_rooms.GetValue()
+        count_of_rooms = int(self.count_of_rooms.GetValue())
+        #
+        if count_of_rooms > self.count_of_guest_combobox(wx.EVT_COMBOBOX):
+            self.count_of_guest.SetValue(self.count_of_rooms.GetValue())
+            self.tour_tax_total(wx.ALL)
+        #
         return count_of_rooms
-
-    def tour_tax_count(self):
-        tour_tax_count = Decimal((int(self.count_of_guest.GetValue()) * int(self.get_duration_accomodation())))
-        return tour_tax_count
-
-    def tour_tax_total(self):
-        tour_tax_total = Decimal(int(self.count_of_guest.GetValue()) * int(self.get_duration_accomodation()) *
-                                 float(prices_default.prices[RoomType.TourTax])).quantize(TWOPLACES)
-        self.tour_tax_text_ctrl.SetValue(str(tour_tax_total))
-        return tour_tax_total
-
-    def price_total(self):
-        price_total = Decimal(self.total_price_accomodation() + self.tour_tax_total())
-        return price_total
-
-    def payment_type_combobox(self, event):
-        payment_type = self.payment_type.GetValue()
-        return payment_type
-
-    # Checbox for tour tax and count of rooms
-    def checkbox_tour_tax(self, event):
-        tour_tax_checkbox = self.tour_tax_checkbox.GetValue()
-        if tour_tax_checkbox:
-            self.tour_tax_text_ctrl.Enable()
-        else:
-            self.tour_tax_text_ctrl.Disable()
 
     def checkbox_count_of_rooms(self, event):
         count_of_rooms_checbox = self.count_of_rooms_checkbox.GetValue()
@@ -297,41 +318,128 @@ class MyFrame(wx.Frame):
             self.count_of_rooms.SetValue(self.count_of_rooms_list[0])
             self.count_of_rooms_combobox(event)
             self.count_of_rooms.Disable()
+            self.total_price_accomodation(wx.EVT_CHECKBOX)
+
+    def tour_tax_count(self, event):
+        tour_tax_count = int(self.count_of_guest.GetValue()) * int(self.get_duration_accomodation())
+        return tour_tax_count
+
+    def tour_tax_total(self, event):
+        tour_tax_total = Decimal(int(self.tour_tax_count(wx.EVT_COMBOBOX)) *
+                                 float(prices_default.prices[RoomType.TourTax])).quantize(TWOPLACES)
+        self.tour_tax_text_ctrl.SetValue(str(tour_tax_total))
+        return tour_tax_total
+
+    def tour_tax_confirm(self):
+        return fr"Тур. збір: {self.tour_tax_total(wx.ALL)} грн."
+
+    def checkbox_tour_tax(self, event):
+        tour_tax_checkbox = self.tour_tax_checkbox.GetValue()
+        if tour_tax_checkbox:
+            self.tour_tax_text_ctrl.Enable()
+            self.tour_tax_total(wx.EVT_CHECKBOX)
+        else:
+            self.tour_tax_text_ctrl.Disable()
+            self.tour_tax_text_ctrl.SetValue("")
+
+    def breakfest_count(self):
+        breakfest_count = int(self.breakfest_count_combobox.GetValue()) * int(self.get_duration_accomodation())
+        return breakfest_count
+
+    def breakfest_total(self, event):
+        breakfest_total = Decimal(int(self.breakfest_count()) *
+                                  float(prices_default.prices[RoomType.Breakfest])).quantize(TWOPLACES)
+        self.breakfest.SetValue(str(breakfest_total))
+        return breakfest_total
+
+    def breakfest_confirm(self):
+        return fr"Сніданки {prices_default.prices[RoomType.Breakfest]} x {self.breakfest_count()}: {self.breakfest_total(wx.EVT_COMBOBOX)} грн."
+
+    def checkbox_breakfest(self, event):
+        checkbox_breakfest = self.breakfest_checkbox.GetValue()
+        if checkbox_breakfest:
+            self.breakfest.Enable()
+            self.breakfest_count_combobox.Enable()
+            self.breakfest_count_combobox.SetValue("1")
+            self.breakfest_total(event)
+        else:
+            self.breakfest.SetValue("")
+            self.breakfest_count_combobox.SetValue("")
+            self.breakfest.Disable()
+            self.breakfest_count_combobox.Disable()
+
+    def total_price(self):
+        total_price = Decimal(self.total_price_accomodation(wx.EVT_TEXT) + self.tour_tax_total(wx.ALL) +
+                              self.breakfest_total(wx.ALL))
+        return total_price
+
+    def payment_type_combobox(self, event):
+        payment_type = self.payment_type.GetValue()
+        return payment_type
+
+    def administrator_name_combobox(self, event):
+        selected_admin_name = self.admin_name.GetValue()
+        return selected_admin_name
+
+    def administrator_surname_combobox(self, event):
+        selected_admin_surname = self.admin_surname_combobox.GetValue()
+        return selected_admin_surname
 
     # makers
-
     def getdata(self):
         order_information = OrderInformation(
-            datemake=self.make_date_changed(wx.adv.EVT_DATE_CHANGED),
             name=self.guest_name_text_ctrl.GetValue(),
+
+            datemake=self.make_date_changed(wx.adv.EVT_DATE_CHANGED),
             date_checkin=self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED),
             date_checkout=self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED),
             duration=self.get_duration_accomodation(),
+
             current_category=self.category_combobox(wx.EVT_COMBOBOX),
             price_per_night=self.price_accomodation_PN_text_ctrl.GetValue(),
-            price_accomodation=str(self.total_price_accomodation()),
-            count_of_rooms=self.count_of_rooms_combobox(wx.EVT_COMBOBOX),
-            count_of_guests=self.count_of_rooms_combobox(wx.EVT_COMBOBOX),
+            price_accomodation=str(self.total_price_accomodation(wx.ALL)),
+
+            count_of_guests=str(self.count_of_rooms_combobox(wx.EVT_COMBOBOX)),
+            count_of_rooms=str(self.count_of_rooms_combobox(wx.EVT_COMBOBOX)),
+
+            t_t_pos=str("2"),
+            t_t_text=str("Туристичний збір"),
+            tour_tax_count=str(self.tour_tax_count(wx.EVT_COMBOBOX)),
             tour_tax_price=str(prices_default.prices[RoomType.TourTax]),
-            tour_tax_count=str(self.tour_tax_count()),
-            tour_tax_total=str(self.tour_tax_total()),
-            price_total=str(self.price_total()),
-            totalpriceend=str(self.price_total()),
+            tour_tax_total=str(self.tour_tax_total(wx.ALL)),
+            tour_tax_confirm=str(self.tour_tax_confirm()),
+
+            br_pos=str("3"),
+            br_text=str("Сніданок"),
+            brkfprice=str(prices_default.prices[RoomType.Breakfest]),
+            brkftcount=str(self.breakfest_count()),
+            breakfest_total=str(self.breakfest_total(wx.EVT_COMBOBOX)),
+            brkfstconfirm=str(self.breakfest_confirm()),
+
+            total_price=str(self.total_price()),
+            totalpriceend=str(self.total_price()),
+            conftotprc=str(self.total_price()),
+
+            payment_type=self.payment_type_combobox(wx.EVT_COMBOBOX),
             administrator=self.administrator_name_combobox(wx.EVT_COMBOBOX),
             admininnitials=self.administrator_surname_combobox(wx.EVT_COMBOBOX),
-            payment_type=self.payment_type_combobox(wx.EVT_COMBOBOX)
+
+            numberofbill=self.numberofbill.GetValue(),
+            company=self.company.GetValue(),
+            compowner=self.compowner.GetValue(),
+            countservpos=self.countservpos.GetValue(),
+            comprequs=self.comprequs.GetValue()
         )
         return asdict(order_information)
 
     def make_confirm(self, event):
+        self.getdata()
         self.content = self.getdata()
         for j in self.content:
             for table in confirm_form.tables:
                 for col in table.columns:
                     for cell in col.cells:
                         for paragraph in cell.paragraphs:
-                            # if paragraph.text.find(j) >= 0:
-                            #     # paragraph.text = paragraph.text.replace(j, str(self.content[j]))
                             for run in paragraph.runs:
                                 if run.text.find(j) >= 0:
                                     run.text = run.text.replace(j, str(self.content[j]))
@@ -347,10 +455,12 @@ class MyFrame(wx.Frame):
         confirm_form.save(
             fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx")
 
-        convert(fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
-                fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
+        # convert(
+        #     fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
+        #     fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
 
     def make_bill(self, event):
+        self.getdata()
         self.content = self.getdata()
         for j in self.content:
             for table in bill_form.tables:
@@ -372,8 +482,9 @@ class MyFrame(wx.Frame):
         bill_form.save(
             fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx")
 
-        convert(fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
-                fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
+        # convert(
+        #     fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
+        #     fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
 
     def make_bill_wc(self, event):
         print("Gonna make bill without cash")
@@ -389,17 +500,13 @@ class MyFrame(wx.Frame):
         setting_prie_frame.Show()
         print("frame time")
 
-    # Main menu bar func
-    # def onSave(self, event):
-    #     print("gonna save")
-
     def onquit(self, event):
         self.Close()
 
-    # files editing and saving
 
-
+# prices default editing and saving
 class PricesDefault:
+
     def __init__(self, prices_dict):
         self.prices = prices_dict
 
@@ -499,8 +606,6 @@ class SettingPriceFrame(wx.Frame):
 
 
 # information
-
-
 class RoomType(str, Enum):
     Standart = "Стандарт"
     Classic = "Класичний"
@@ -524,27 +629,49 @@ prices_default = PricesDefault({
 
 @dataclass
 class OrderInformation:
+    # confirm and bill data ↓
     name: str
+
     datemake: str
     date_checkin: str
     date_checkout: str
     duration: str
+
     current_category: str
     price_per_night: str
     price_accomodation: str
-    count_of_rooms: str
+
     count_of_guests: str
+    count_of_rooms: str
+
+    t_t_pos: str
+    t_t_text: str
     tour_tax_price: str
     tour_tax_count: str
     tour_tax_total: str
-    price_total: str
+    tour_tax_confirm: str
+
+    br_pos: str
+    br_text: str
+    brkfprice: str
+    brkftcount: str
+    breakfest_total: str
+    brkfstconfirm: str
+
+    total_price: str
     totalpriceend: str
+    conftotprc: str
+
+    payment_type: str
     administrator: str
     admininnitials: str
-    payment_type: str
 
-    # company_name: str
-    # number_of_bill: int
+    # bill_wc and acts data ↓
+    numberofbill: str
+    company: str
+    compowner: str
+    countservpos: str
+    comprequs: str
 
 
 # Main frame
