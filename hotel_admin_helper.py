@@ -170,7 +170,6 @@ class MyFrame(wx.Frame):
         main_sizer.Add(tour_tax_stat_txt, pos=(10, 0), flag=wx.LEFT, border=10)
         self.tour_tax_text_ctrl = wx.TextCtrl(panel)
         main_sizer.Add(self.tour_tax_text_ctrl, pos=(10, 1), flag=wx.EXPAND | wx.LEFT, border=10)
-        self.tour_tax_text_ctrl.SetValue(str(self.tour_tax_total(wx.EVT_TEXT)))
         self.tour_tax_checkbox = wx.CheckBox(panel)
         main_sizer.Add(self.tour_tax_checkbox, pos=(10, 2), flag=wx.ALL, border=5)
         self.tour_tax_checkbox.Bind(wx.EVT_CHECKBOX, self.checkbox_tour_tax, self.tour_tax_checkbox)
@@ -258,7 +257,8 @@ class MyFrame(wx.Frame):
         checkin_date = checkin_date.Format("%d.%m.%y")
         self.get_duration_accomodation()
         self.total_price_accomodation(wx.adv.EVT_DATE_CHANGED)
-        self.tour_tax_total(wx.EVT_COMBOBOX)
+        if self.checkbox_tour_tax(wx.EVT_CHECKBOX) is True:
+            self.tour_tax_total(wx.EVT_COMBOBOX)
         return checkin_date
 
     def checkout_date_changed(self, event):
@@ -266,7 +266,8 @@ class MyFrame(wx.Frame):
         checkout_date = checkout_date.Format("%d.%m.%y")
         self.get_duration_accomodation()
         self.total_price_accomodation(wx.adv.EVT_DATE_CHANGED)
-        self.tour_tax_total(wx.EVT_COMBOBOX)
+        if self.checkbox_tour_tax(wx.EVT_CHECKBOX) is True:
+            self.tour_tax_total(wx.EVT_COMBOBOX)
         return checkout_date
 
     def get_duration_accomodation(self):
@@ -281,6 +282,8 @@ class MyFrame(wx.Frame):
         if selected_category:
             self.price_accomodation_PN_text_ctrl.SetValue(str(prices_default.prices[selected_category]))
             self.total_price_accomodation(wx.EVT_COMBOBOX)
+        if self.checkbox_tour_tax(wx.EVT_CHECKBOX) is True:
+            self.tour_tax_total(wx.EVT_COMBOBOX)
         return selected_category
 
     def price_pernight_changed(self, event):
@@ -296,6 +299,17 @@ class MyFrame(wx.Frame):
         self.total_price_accomodation_text_ctrl.SetValue(str(total_price_accomodation))
         return total_price_accomodation
 
+    def checkbox_count_of_rooms(self, event):
+        count_of_rooms_checbox = self.count_of_rooms_checkbox.GetValue()
+        if count_of_rooms_checbox:
+            self.count_of_rooms.Enable()
+            self.count_of_rooms_combobox(event)
+        else:
+            self.count_of_rooms.SetValue(self.count_of_rooms_list[0])
+            self.count_of_rooms_combobox(event)
+            self.count_of_rooms.Disable()
+            self.total_price_accomodation(wx.EVT_CHECKBOX)
+
     def count_of_guest_combobox(self, event):
         count_of_guest = int(self.count_of_guest.GetValue())
         return count_of_guest
@@ -309,51 +323,36 @@ class MyFrame(wx.Frame):
         #
         return count_of_rooms
 
-    def checkbox_count_of_rooms(self, event):
-        count_of_rooms_checbox = self.count_of_rooms_checkbox.GetValue()
-        if count_of_rooms_checbox:
-            self.count_of_rooms.Enable()
-            self.count_of_rooms_combobox(event)
-        else:
-            self.count_of_rooms.SetValue(self.count_of_rooms_list[0])
-            self.count_of_rooms_combobox(event)
-            self.count_of_rooms.Disable()
-            self.total_price_accomodation(wx.EVT_CHECKBOX)
-
-    def tour_tax_count(self, event):
-        tour_tax_count = int(self.count_of_guest.GetValue()) * int(self.get_duration_accomodation())
-        return tour_tax_count
-
-    def tour_tax_total(self, event):
-        tour_tax_total = Decimal(int(self.tour_tax_count(wx.EVT_COMBOBOX)) *
-                                 float(prices_default.prices[RoomType.TourTax])).quantize(TWOPLACES)
-        self.tour_tax_text_ctrl.SetValue(str(tour_tax_total))
-        return tour_tax_total
-
-    def tour_tax_confirm(self):
-        return fr"Тур. збір: {self.tour_tax_total(wx.ALL)} грн."
-
     def checkbox_tour_tax(self, event):
         tour_tax_checkbox = self.tour_tax_checkbox.GetValue()
         if tour_tax_checkbox:
             self.tour_tax_text_ctrl.Enable()
-            self.tour_tax_total(wx.EVT_CHECKBOX)
+            return True
         else:
             self.tour_tax_text_ctrl.Disable()
             self.tour_tax_text_ctrl.SetValue("")
+            return False
 
-    def breakfest_count(self):
-        breakfest_count = int(self.breakfest_count_combobox.GetValue()) * int(self.get_duration_accomodation())
-        return breakfest_count
+    def tour_tax_count(self, event):
+        tour_tax_count = int(self.count_of_guest.GetValue()) * int(self.get_duration_accomodation())
+        if self.checkbox_tour_tax(wx.EVT_CHECKBOX):
+            return tour_tax_count
+        else:
+            return ""
 
-    def breakfest_total(self, event):
-        breakfest_total = Decimal(int(self.breakfest_count()) *
-                                  float(prices_default.prices[RoomType.Breakfest])).quantize(TWOPLACES)
-        self.breakfest.SetValue(str(breakfest_total))
-        return breakfest_total
+    def tour_tax_total(self, event):
+        if self.checkbox_tour_tax(wx.EVT_CHECKBOX):
+            tour_tax_total = Decimal(int(self.tour_tax_count(wx.EVT_COMBOBOX)) *
+                                     float(prices_default.prices[RoomType.TourTax])).quantize(TWOPLACES)
+            self.tour_tax_text_ctrl.SetValue(str(tour_tax_total))
+            return tour_tax_total
+        else:
+            return ""
 
-    def breakfest_confirm(self):
-        return fr"Сніданки {prices_default.prices[RoomType.Breakfest]} x {self.breakfest_count()}: {self.breakfest_total(wx.EVT_COMBOBOX)} грн."
+    def tour_tax_confirm(self):
+        return fr"Тур. збір: {self.tour_tax_total(wx.ALL)} грн." if self.checkbox_tour_tax(wx.EVT_CHECKBOX) else ""
+
+
 
     def checkbox_breakfest(self, event):
         checkbox_breakfest = self.breakfest_checkbox.GetValue()
@@ -368,10 +367,55 @@ class MyFrame(wx.Frame):
             self.breakfest.Disable()
             self.breakfest_count_combobox.Disable()
 
+    def breakfest_count(self):
+        if self.breakfest_count_combobox.GetValue():
+            breakfest_count = int(self.breakfest_count_combobox.GetValue())
+            return breakfest_count
+        else:
+            return ""
+
+    def breakfest_total(self, event):
+        if self.breakfest_count_combobox.GetValue():
+            breakfest_total = Decimal(int(self.breakfest_count()) *
+                                      float(prices_default.prices[RoomType.Breakfest])).quantize(TWOPLACES)
+            self.breakfest.SetValue(str(breakfest_total))
+            return int(breakfest_total)
+        else:
+            return ""
+
+    def breakfest_confirm(self):
+        if self.breakfest_total(wx.ALL):
+            return fr"Сніданки {prices_default.prices[RoomType.Breakfest]} x {self.breakfest_count()}: {self.breakfest_total(wx.EVT_COMBOBOX)} грн."
+        else:
+            return ""
+
     def total_price(self):
-        total_price = Decimal(self.total_price_accomodation(wx.EVT_TEXT) + self.tour_tax_total(wx.ALL) +
-                              self.breakfest_total(wx.ALL))
-        return total_price
+        if self.breakfest_total(wx.EVT_COMBOBOX) and self.tour_tax_total(wx.EVT_COMBOBOX):
+            total_price = Decimal(self.total_price_accomodation(wx.EVT_TEXT) + self.tour_tax_total(wx.EVT_TEXT) +
+                                  self.breakfest_total(wx.EVT_COMBOBOX))
+            return total_price
+        elif self.tour_tax_total(wx.ALL):
+            total_price = Decimal(self.total_price_accomodation(wx.EVT_TEXT) + self.tour_tax_total(wx.EVT_TEXT))
+            return total_price
+        elif self.breakfest_total(wx.EVT_COMBOBOX):
+            total_price = Decimal(self.total_price_accomodation(wx.EVT_TEXT) + self.breakfest_total(wx.EVT_COMBOBOX))
+            return total_price
+        else:
+            return Decimal(self.total_price_accomodation(wx.EVT_TEXT))
+
+    def t_t_pos(self): return "2" if self.checkbox_tour_tax(wx.EVT_COMBOBOX) else ""
+
+    def t_t_text(self): return "Туристичний збір" if self.checkbox_tour_tax(wx.EVT_COMBOBOX) else ""
+
+    def t_t_price(self): return fr"{prices_default.prices[RoomType.TourTax]}" if self.checkbox_tour_tax(wx.EVT_COMBOBOX) else ""
+
+    def br_pos(self): return "3" if self.breakfest_count() else ""
+
+    def br_text(self): return "Сніданок" if self.breakfest_count() else ""
+
+    def br_price(self): return fr"{prices_default.prices[RoomType.Breakfest]}" if self.breakfest_count() else ""
+
+
 
     def payment_type_combobox(self, event):
         payment_type = self.payment_type.GetValue()
@@ -391,7 +435,7 @@ class MyFrame(wx.Frame):
             name=self.guest_name_text_ctrl.GetValue(),
 
             datemake=self.make_date_changed(wx.adv.EVT_DATE_CHANGED),
-            date_checkin=self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED),
+            checkin=self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED),
             date_checkout=self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED),
             duration=self.get_duration_accomodation(),
 
@@ -402,16 +446,16 @@ class MyFrame(wx.Frame):
             count_of_guests=str(self.count_of_rooms_combobox(wx.EVT_COMBOBOX)),
             count_of_rooms=str(self.count_of_rooms_combobox(wx.EVT_COMBOBOX)),
 
-            t_t_pos=str("2"),
-            t_t_text=str("Туристичний збір"),
-            tour_tax_count=str(self.tour_tax_count(wx.EVT_COMBOBOX)),
-            tour_tax_price=str(prices_default.prices[RoomType.TourTax]),
+            t_t_pos=str(self.t_t_pos()),
+            t_t_text=str(self.t_t_text()),
+            tour_tax_count=str(self.tour_tax_count(wx.ALL)),
+            tour_tax_price=str(self.t_t_price()),
             tour_tax_total=str(self.tour_tax_total(wx.ALL)),
-            tour_tax_confirm=str(self.tour_tax_confirm()),
+            tourtaxconfirm=str(self.tour_tax_confirm()),
 
-            br_pos=str("3"),
-            br_text=str("Сніданок"),
-            brkfprice=str(prices_default.prices[RoomType.Breakfest]),
+            br_pos=str(self.br_pos()),
+            br_text=str(self.br_text()),
+            brkfprice=str(self.br_price()),
             brkftcount=str(self.breakfest_count()),
             breakfest_total=str(self.breakfest_total(wx.EVT_COMBOBOX)),
             brkfstconfirm=str(self.breakfest_confirm()),
@@ -447,6 +491,10 @@ class MyFrame(wx.Frame):
                                     font = style.font
                                     font.name = "Times New Roman"
                                     font.size = docx.shared.Pt(12)
+        for table in bill_form.tables:
+            for row in table.rows:
+                    if all(cell.text.isspace() or cell.text == '' for cell in row.cells):
+                        table._element.remove(row._element)
         self.saver_confirm()
 
     def saver_confirm(self):
@@ -455,9 +503,9 @@ class MyFrame(wx.Frame):
         confirm_form.save(
             fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx")
 
-        # convert(
-        #     fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
-        #     fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
+        convert(
+            fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
+            fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
 
     def make_bill(self, event):
         self.getdata()
@@ -474,6 +522,10 @@ class MyFrame(wx.Frame):
                                     font = style.font
                                     font.name = "Times New Roman"
                                     font.size = docx.shared.Pt(12)
+        for table in bill_form.tables:
+            for row in table.rows:
+                if all(cell.text.isspace() or cell.text == '' for cell in row.cells):
+                    table._element.remove(row._element)
         self.saver_bill()
 
     def saver_bill(self):
@@ -482,9 +534,9 @@ class MyFrame(wx.Frame):
         bill_form.save(
             fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx")
 
-        # convert(
-        #     fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
-        #     fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
+        convert(
+            fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
+            fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
 
     def make_bill_wc(self, event):
         print("Gonna make bill without cash")
@@ -633,7 +685,7 @@ class OrderInformation:
     name: str
 
     datemake: str
-    date_checkin: str
+    checkin: str
     date_checkout: str
     duration: str
 
@@ -649,7 +701,7 @@ class OrderInformation:
     tour_tax_price: str
     tour_tax_count: str
     tour_tax_total: str
-    tour_tax_confirm: str
+    tourtaxconfirm: str
 
     br_pos: str
     br_text: str
