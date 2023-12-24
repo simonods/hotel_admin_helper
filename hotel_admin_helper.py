@@ -18,7 +18,11 @@ confirm_form = docx.Document(fr"{curr_path}\resourses\confirm_form.docx")
 
 bill_form = docx.Document(fr"{curr_path}\resourses\bill_form.docx")
 
-# bill_wc
+bill_form_wc = openpyxl.load_workbook(fr"{curr_path}\resourses\bill_wc_form.xlsx")
+bill_form_wc_editor = bill_form_wc.active
+
+act_form = openpyxl.load_workbook(fr"{curr_path}\resourses\act_form.xlsx")
+act_form_editor = act_form.active
 
 # interface
 
@@ -352,8 +356,6 @@ class MyFrame(wx.Frame):
     def tour_tax_confirm(self):
         return fr"Тур. збір: {self.tour_tax_total(wx.ALL)} грн." if self.checkbox_tour_tax(wx.EVT_CHECKBOX) else ""
 
-
-
     def checkbox_breakfest(self, event):
         checkbox_breakfest = self.breakfest_checkbox.GetValue()
         if checkbox_breakfest:
@@ -403,6 +405,19 @@ class MyFrame(wx.Frame):
         else:
             return Decimal(self.total_price_accomodation(wx.EVT_TEXT))
 
+    def payment_type_combobox(self, event):
+        payment_type = self.payment_type.GetValue()
+        return payment_type
+
+    def administrator_name_combobox(self, event):
+        selected_admin_name = self.admin_name.GetValue()
+        return selected_admin_name
+
+    def administrator_surname_combobox(self, event):
+        selected_admin_surname = self.admin_surname_combobox.GetValue()
+        return selected_admin_surname
+
+    # bill fillers
     def t_t_pos(self): return "2" if self.checkbox_tour_tax(wx.EVT_COMBOBOX) else ""
 
     def t_t_text(self): return "Туристичний збір" if self.checkbox_tour_tax(wx.EVT_COMBOBOX) else ""
@@ -415,19 +430,25 @@ class MyFrame(wx.Frame):
 
     def br_price(self): return fr"{prices_default.prices[RoomType.Breakfest]}" if self.breakfest_count() else ""
 
+    # bill_wc and act fucns
 
+    def services_count(self):
+        if self.checkbox_tour_tax(wx.EVT_CHECKBOX) and self.checkbox_breakfest(wx.EVT_CHECKBOX):
+            return 3
+        elif self.checkbox_tour_tax(wx.EVT_CHECKBOX) or self.checkbox_breakfest(wx.EVT_CHECKBOX):
+            return 2
+        else:
+            return 1
 
-    def payment_type_combobox(self, event):
-        payment_type = self.payment_type.GetValue()
-        return payment_type
+    def pidstava_actu(self):
+        return f"""
+            Ми, що нижче підписалися, представник Замовника {self.company_name()}, з одного боку, і представник \r
+            Виконавця ТОВАРИСТВО З ОБМЕЖЕНОЮ ВІДПОВІДАЛЬНІСТЮ "ПАЛЕ РОЯЛЬ ОДЕСА" , з іншого\r 
+            боку, склали цей акт про те, що на підставі наведених документів:
+        """
 
-    def administrator_name_combobox(self, event):
-        selected_admin_name = self.admin_name.GetValue()
-        return selected_admin_name
-
-    def administrator_surname_combobox(self, event):
-        selected_admin_surname = self.admin_surname_combobox.GetValue()
-        return selected_admin_surname
+    def company_name(self):
+        return fr"{self.company}".upper()
 
     # makers
     def getdata(self):
@@ -539,7 +560,55 @@ class MyFrame(wx.Frame):
             fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
 
     def make_bill_wc(self, event):
-        print("Gonna make bill without cash")
+        def coin_marker():
+            unstndrt_digit = list(range(5, 21))
+            stndrt_digit = ["2", "3", "4"]
+            if str(self.total_price()).endswith(str(i for i in unstndrt_digit)):
+                return "копійок"
+            elif str(self.total_price()).endswith("1"):
+                return "копійка"
+            elif str(self.total_price()).endswith(str(i for i in stndrt_digit)):
+                return "копійки"
+            else:
+                return "копійок"
+
+        bill_form_wc_editor["C12"] = fr"Рахунок на оплату № {self.numberofbill.GetValue()} від {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)} р."
+        bill_form_wc_editor["H17"] = self.company_name()
+        bill_form_wc_editor["C28"] = fr"Всього найменувань {self.services_count()} на суму {int(self.total_price())} гривень {self.total_price():.2f} {coin_marker()}"
+        # tables
+        bill_form_wc_editor["E24"] = fr"Розміщення {self.guest_name_text_ctrl.GetValue()} з {self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED)} по {self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)} у категорії {self.category_combobox(wx.EVT_COMBOBOX)}"
+        bill_form_wc_editor["AC24"] = fr"{int(self.get_duration_accomodation())}"
+        bill_form_wc_editor["AH24"] = fr"{float(self.price_accomodation_PN_text_ctrl.GetValue())}"
+        if self.services_count() == 1:
+            bill_form_wc_editor.delete_rows(25)
+            bill_form_wc_editor.delete_rows(26)
+        elif self.services_count() == 2:
+            bill_form_wc_editor["C25"] = 2
+            bill_form_wc_editor.delete_rows(26)
+            if self.checkbox_breakfest(wx.EVT_CHECKBOX):
+                bill_form_wc_editor["E25"] = fr"Сніданок для {self.guest_name_text_ctrl.GetValue()}"
+                bill_form_wc_editor["AC25"] = int(self.breakfest_count())
+                bill_form_wc_editor["AH25"] = float(prices_default.prices[RoomType.Breakfest])
+            elif self.checkbox_tour_tax(wx.EVT_CHECKBOX):
+                bill_form_wc_editor["E25"] = "Туристичний збір"
+                bill_form_wc_editor["AC25"] = int(self.tour_tax_count(wx.EVT_COMBOBOX))
+                bill_form_wc_editor["AH25"] = float(prices_default.prices[RoomType.TourTax])
+        else:
+            bill_form_wc_editor["C26"] = 3
+            bill_form_wc_editor["E25"] = fr"Сніданок для {self.guest_name_text_ctrl.GetValue()}"
+            bill_form_wc_editor["AC25"] = int(self.breakfest_count())
+            bill_form_wc_editor["AH25"] = float(prices_default.prices[RoomType.Breakfest])
+            bill_form_wc_editor["E26"] = "Туристичний збір"
+            bill_form_wc_editor["AC26"] = int(self.tour_tax_count(wx.EVT_COMBOBOX))
+            bill_form_wc_editor["AH26"] = float(prices_default.prices[RoomType.TourTax])
+
+        if not os.path.exists(fr"{curr_path}\Безготівкові рахунки"):
+            os.makedirs(fr"{curr_path}\Безготівкові рахунки")
+        bill_form_wc_editor.save(fr"""
+        {curr_path}\Безготівкові рахунки\Безготівковий рахунок №{self.numberofbill.GetValue()} {self.company_name()} від
+        {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}")
+        """)
+        bill_form_wc_editor.close()
 
     def make_act(self, event):
         print("Gonna make act")
