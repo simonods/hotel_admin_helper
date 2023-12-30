@@ -1,7 +1,0 @@
-
-NUMBEROFBILL Номер Б/Г рахунка @
-COMPANY Назва компанії @
-COMPOWNER Власник компанії @
-COMPREQUSРеквізити компанії @
-SUMMWORDS Сумма прописом @
-COUNTSERVICESPOSITIONS Кількість позицій  @
