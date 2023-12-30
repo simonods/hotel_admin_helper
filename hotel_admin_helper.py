@@ -4,27 +4,13 @@ import wx
 import wx.adv
 import os
 import docx
-import openpyxl
+from num2words import num2words
+from openpyxl import load_workbook
 from decimal import Decimal
 from enum import Enum
 from dataclasses import dataclass, asdict
 from docx2pdf import convert
 
-app = wx.App()
-curr_path = os.getcwd()
-
-# forms for editing
-confirm_form = docx.Document(fr"{curr_path}\resourses\confirm_form.docx")
-
-bill_form = docx.Document(fr"{curr_path}\resourses\bill_form.docx")
-
-bill_form_wc = openpyxl.load_workbook(fr"{curr_path}\resourses\bill_wc_form.xlsx")
-bill_form_wc_editor = bill_form_wc.active
-
-act_form = openpyxl.load_workbook(fr"{curr_path}\resourses\act_form.xlsx")
-act_form_editor = act_form.active
-
-# interface
 
 # constants
 TODAY = datetime.date.today()
@@ -32,11 +18,11 @@ APP_EXIT = wx.NewIdRef()
 APP_SAVE = wx.NewIdRef()
 CHANGE_PRICES_FRAME = wx.NewIdRef()
 TWOPLACES = Decimal(10) ** -2
+app = wx.App()
+curr_path = os.getcwd()
 
 
 # main frame
-
-
 class MyFrame(wx.Frame):
     def __init__(self, parent, title):
         super().__init__(parent, title=title)
@@ -237,11 +223,6 @@ class MyFrame(wx.Frame):
         self.compowner = wx.TextCtrl(panel)
         main_sizer.Add(self.compowner, pos=(6, 2), flag=wx.EXPAND | wx.LEFT, border=10)
 
-        countservpos_stat_txt = wx.StaticText(panel, label="↓ Усього найменувань ↓")
-        main_sizer.Add(countservpos_stat_txt, pos=(7, 2), flag=wx.EXPAND | wx.LEFT, border=10)
-        self.countservpos = wx.TextCtrl(panel)
-        main_sizer.Add(self.countservpos, pos=(8, 2), flag=wx.EXPAND | wx.LEFT, border=10)
-
         comprequs_stat_txt = wx.StaticText(panel, label="↓ Реквізити компанії ↓")
         main_sizer.Add(comprequs_stat_txt, pos=(13, 2), flag=wx.EXPAND | wx.LEFT | wx.BOTTOM, border=10)
         self.comprequs = wx.TextCtrl(panel)
@@ -253,12 +234,12 @@ class MyFrame(wx.Frame):
 
     def make_date_changed(self, event):
         date_make = self.date_make.GetValue()
-        date_make = date_make.Format("%d.%m.%y")
+        date_make = date_make.Format("%d.%m.%Y")
         return date_make
 
     def checkin_date_changed(self, event):
         checkin_date = self.checkin_date.GetValue()
-        checkin_date = checkin_date.Format("%d.%m.%y")
+        checkin_date = checkin_date.Format("%d.%m.%Y")
         self.get_duration_accomodation()
         self.total_price_accomodation(wx.adv.EVT_DATE_CHANGED)
         if self.checkbox_tour_tax(wx.EVT_CHECKBOX) is True:
@@ -267,7 +248,7 @@ class MyFrame(wx.Frame):
 
     def checkout_date_changed(self, event):
         checkout_date = self.checkout_date.GetValue()
-        checkout_date = checkout_date.Format("%d.%m.%y")
+        checkout_date = checkout_date.Format("%d.%m.%Y")
         self.get_duration_accomodation()
         self.total_price_accomodation(wx.adv.EVT_DATE_CHANGED)
         if self.checkbox_tour_tax(wx.EVT_CHECKBOX) is True:
@@ -386,7 +367,7 @@ class MyFrame(wx.Frame):
             return ""
 
     def breakfest_confirm(self):
-        if self.breakfest_total(wx.ALL):
+        if self.breakfest_total(wx.EVT_TEXT):
             return fr"Сніданки {prices_default.prices[RoomType.Breakfest]} x {self.breakfest_count()}: {self.breakfest_total(wx.EVT_COMBOBOX)} грн."
         else:
             return ""
@@ -433,22 +414,15 @@ class MyFrame(wx.Frame):
     # bill_wc and act fucns
 
     def services_count(self):
-        if self.checkbox_tour_tax(wx.EVT_CHECKBOX) and self.checkbox_breakfest(wx.EVT_CHECKBOX):
-            return 3
-        elif self.checkbox_tour_tax(wx.EVT_CHECKBOX) or self.checkbox_breakfest(wx.EVT_CHECKBOX):
-            return 2
-        else:
-            return 1
+        counter = 1
+        if self.checkbox_tour_tax(wx.EVT_CHECKBOX):
+            counter += 1
+        if self.breakfest_checkbox:
+            counter += 1
+        return counter
 
-    def pidstava_actu(self):
-        return f"""
-            Ми, що нижче підписалися, представник Замовника {self.company_name()}, з одного боку, і представник \r
-            Виконавця ТОВАРИСТВО З ОБМЕЖЕНОЮ ВІДПОВІДАЛЬНІСТЮ "ПАЛЕ РОЯЛЬ ОДЕСА" , з іншого\r 
-            боку, склали цей акт про те, що на підставі наведених документів:
-        """
-
-    def company_name(self):
-        return fr"{self.company}".upper()
+    # def company_name(self):
+    #     return fr"{self.company}".upper()
 
     # makers
     def getdata(self):
@@ -492,12 +466,14 @@ class MyFrame(wx.Frame):
             numberofbill=self.numberofbill.GetValue(),
             company=self.company.GetValue(),
             compowner=self.compowner.GetValue(),
-            countservpos=self.countservpos.GetValue(),
             comprequs=self.comprequs.GetValue()
         )
         return asdict(order_information)
 
     def make_confirm(self, event):
+
+        confirm_form = docx.Document(fr"{curr_path}\resourses\confirm_form.docx")
+
         self.getdata()
         self.content = self.getdata()
         for j in self.content:
@@ -512,23 +488,29 @@ class MyFrame(wx.Frame):
                                     font = style.font
                                     font.name = "Times New Roman"
                                     font.size = docx.shared.Pt(12)
-        for table in bill_form.tables:
+        for table in confirm_form.tables:
             for row in table.rows:
                     if all(cell.text.isspace() or cell.text == '' for cell in row.cells):
                         table._element.remove(row._element)
-        self.saver_confirm()
 
-    def saver_confirm(self):
-        if not os.path.exists(fr"{curr_path}\confirms"):
-            os.makedirs(fr"{curr_path}\confirms")
-        confirm_form.save(
-            fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx")
+        def saver_confirm():
+            if not os.path.exists(fr"{curr_path}\Підтверження бронювання"):
+                os.makedirs(fr"{curr_path}\Підтверження бронювання")
+            confirm_form.save(
+                fr"{curr_path}\Підтверження бронювання\Підтверження бронювання {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx")
 
-        convert(
-            fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
-            fr"{curr_path}\confirms\Conrfirm {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
+            convert(
+                fr"{curr_path}\Підтверження бронювання\Підтверження бронювання {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
+                fr"{curr_path}\Підтверження бронювання\Підтверження бронювання {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
+
+        saver_confirm()
+
+
 
     def make_bill(self, event):
+
+        bill_form = docx.Document(fr"{curr_path}\resourses\bill_form.docx")
+
         self.getdata()
         self.content = self.getdata()
         for j in self.content:
@@ -539,7 +521,7 @@ class MyFrame(wx.Frame):
                             for run in paragraph.runs:
                                 if run.text.find(j) >= 0:
                                     run.text = run.text.replace(j, str(self.content[j]))
-                                    style = confirm_form.styles['Normal']
+                                    style = bill_form.styles['Normal']
                                     font = style.font
                                     font.name = "Times New Roman"
                                     font.size = docx.shared.Pt(12)
@@ -547,22 +529,32 @@ class MyFrame(wx.Frame):
             for row in table.rows:
                 if all(cell.text.isspace() or cell.text == '' for cell in row.cells):
                     table._element.remove(row._element)
-        self.saver_bill()
 
-    def saver_bill(self):
-        if not os.path.exists(fr"{curr_path}\bills"):
-            os.makedirs(fr"{curr_path}\bills")
-        bill_form.save(
-            fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx")
+        def saver_bill():
+            if not os.path.exists(fr"{curr_path}\Рахунки"):
+                os.makedirs(fr"{curr_path}\Рахунки")
+            bill_form.save(
+                fr"{curr_path}\Рахунки\Рахунок {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx")
 
-        convert(
-            fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
-            fr"{curr_path}\bills\Bill {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
+            convert(
+                fr"{curr_path}\Рахунки\Рахунок {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.docx",
+                fr"{curr_path}\Рахунки\Рахунок {self.guest_name_text_ctrl.GetValue()} {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.pdf")
+
+        saver_bill()
+
 
     def make_bill_wc(self, event):
+        bill_form_wc = load_workbook(fr"{curr_path}\resourses\bill_wc_form.xlsx")
+        bill_form_wc_editor = bill_form_wc.active
+
+        total_price_coins = f"{self.total_price():.2f}"[:-3:-1][::-1]
+        numbywords = num2words(int(self.total_price()), lang='uk')
+        numbywords = numbywords.capitalize()
+
+        unstndrt_digit = list(range(5, 21))
+        stndrt_digit = ["2", "3", "4"]
+
         def coin_marker():
-            unstndrt_digit = list(range(5, 21))
-            stndrt_digit = ["2", "3", "4"]
             if str(self.total_price()).endswith(str(i for i in unstndrt_digit)):
                 return "копійок"
             elif str(self.total_price()).endswith("1"):
@@ -572,46 +564,110 @@ class MyFrame(wx.Frame):
             else:
                 return "копійок"
 
+        # out of table
         bill_form_wc_editor["C12"] = fr"Рахунок на оплату № {self.numberofbill.GetValue()} від {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)} р."
-        bill_form_wc_editor["H17"] = self.company_name()
-        bill_form_wc_editor["C28"] = fr"Всього найменувань {self.services_count()} на суму {int(self.total_price())} гривень {self.total_price():.2f} {coin_marker()}"
+        bill_form_wc_editor["H17"] = self.company.GetValue()
+        bill_form_wc_editor["C30"] = fr"Всього найменувань {self.services_count()} на суму {int(self.total_price())} грн. {total_price_coins} {coin_marker()}"
+        bill_form_wc_editor["C31"] = fr"{numbywords} грн. {total_price_coins} {coin_marker()}"
+
         # tables
         bill_form_wc_editor["E24"] = fr"Розміщення {self.guest_name_text_ctrl.GetValue()} з {self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED)} по {self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)} у категорії {self.category_combobox(wx.EVT_COMBOBOX)}"
-        bill_form_wc_editor["AC24"] = fr"{int(self.get_duration_accomodation())}"
-        bill_form_wc_editor["AH24"] = fr"{float(self.price_accomodation_PN_text_ctrl.GetValue())}"
-        if self.services_count() == 1:
-            bill_form_wc_editor.delete_rows(25)
-            bill_form_wc_editor.delete_rows(26)
-        elif self.services_count() == 2:
+        bill_form_wc_editor["AC24"] = int(self.get_duration_accomodation())
+        bill_form_wc_editor["AH24"] = float(self.price_accomodation_PN_text_ctrl.GetValue())
+        bill_form_wc_editor["AK27"] = float(self.total_price())
+
+        # breakfest
+        if self.breakfest_checkbox.GetValue():
             bill_form_wc_editor["C25"] = 2
-            bill_form_wc_editor.delete_rows(26)
-            if self.checkbox_breakfest(wx.EVT_CHECKBOX):
-                bill_form_wc_editor["E25"] = fr"Сніданок для {self.guest_name_text_ctrl.GetValue()}"
-                bill_form_wc_editor["AC25"] = int(self.breakfest_count())
-                bill_form_wc_editor["AH25"] = float(prices_default.prices[RoomType.Breakfest])
-            elif self.checkbox_tour_tax(wx.EVT_CHECKBOX):
-                bill_form_wc_editor["E25"] = "Туристичний збір"
-                bill_form_wc_editor["AC25"] = int(self.tour_tax_count(wx.EVT_COMBOBOX))
-                bill_form_wc_editor["AH25"] = float(prices_default.prices[RoomType.TourTax])
-        else:
-            bill_form_wc_editor["C26"] = 3
             bill_form_wc_editor["E25"] = fr"Сніданок для {self.guest_name_text_ctrl.GetValue()}"
             bill_form_wc_editor["AC25"] = int(self.breakfest_count())
             bill_form_wc_editor["AH25"] = float(prices_default.prices[RoomType.Breakfest])
+            bill_form_wc_editor["AK25"] = float(self.breakfest_total(wx.EVT_COMBOBOX))
+
+        # tour tax
+        if self.tour_tax_checkbox.GetValue():
+            bill_form_wc_editor["C26"] = 3
             bill_form_wc_editor["E26"] = "Туристичний збір"
             bill_form_wc_editor["AC26"] = int(self.tour_tax_count(wx.EVT_COMBOBOX))
             bill_form_wc_editor["AH26"] = float(prices_default.prices[RoomType.TourTax])
+            bill_form_wc_editor["AK26"] = float(self.tour_tax_total(wx.EVT_COMBOBOX))
+
+        if not self.breakfest_checkbox.GetValue():
+            bill_form_wc_editor["C26"] = 2
+            bill_form_wc_editor.delete_rows(25)
+        if not self.tour_tax_checkbox.GetValue():
+            bill_form_wc_editor.delete_rows(26)
 
         if not os.path.exists(fr"{curr_path}\Безготівкові рахунки"):
             os.makedirs(fr"{curr_path}\Безготівкові рахунки")
-        bill_form_wc_editor.save(fr"""
-        {curr_path}\Безготівкові рахунки\Безготівковий рахунок №{self.numberofbill.GetValue()} {self.company_name()} від
-        {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}")
-        """)
-        bill_form_wc_editor.close()
+        bill_form_wc.save(fr"{curr_path}\Безготівкові рахунки\Безготівковий рахунок №{self.numberofbill.GetValue()} {self.company.GetValue()} від {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.xlsx")
+        bill_form_wc.close()
 
     def make_act(self, event):
-        print("Gonna make act")
+
+        act_form = load_workbook(fr"{curr_path}\resourses\act_form.xlsx")
+        act_form_editor = act_form.active
+
+        total_price_coins = f"{self.total_price():.2f}"[:-3:-1][::-1]
+        unstndrt_digit = list(range(5, 21))
+        stndrt_digit = ["2", "3", "4"]
+        company_name = self.company.GetValue()
+
+        def coin_marker():
+            if str(self.total_price()).endswith(str(i for i in unstndrt_digit)):
+                return "копійок"
+            elif str(self.total_price()).endswith("1"):
+                return "копійка"
+            elif str(self.total_price()).endswith(str(i for i in stndrt_digit)):
+                return "копійки"
+            else:
+                return "копійок"
+
+        # out of table
+        print(type(company_name), company_name)
+        act_form_editor["R5"] = company_name
+        act_form_editor["R8"] = self.compowner.GetValue()
+        act_form_editor["B10"] = f"АКТ надання послуг\r№ {self.numberofbill.GetValue()} від {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)} р."
+        act_form_editor["B12"] = f'Ми, що нижче підписалися, представник Замовника {company_name}, з одного боку, і представник\rВиконавця ТОВАРИСТВО З ОБМЕЖЕНОЮ ВІДПОВІДАЛЬНІСТЮ "ПАЛЕ РОЯЛЬ ОДЕСА" , з іншого\rбоку, склали цей акт про те, що на підставі наведених документів:'
+        act_form_editor["J15"] = f"Рахунок на оплату № {self.numberofbill.GetValue()} від {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}"
+        act_form_editor["B28"] = fr"Загальна вартість робіт (послуг) склала {int(self.total_price())} грн. {total_price_coins} {coin_marker()} без ПДВ"
+        act_form_editor["B35"] = fr"{self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)}"
+        act_form_editor["R35"] = fr"{self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)}"
+        act_form_editor["R36"] = self.comprequs.GetValue()
+
+
+        # tables
+        act_form_editor["D21"] = fr"Розміщення {self.guest_name_text_ctrl.GetValue()} з {self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED)} по {self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)} у категорії {self.category_combobox(wx.EVT_COMBOBOX)}"
+        act_form_editor["U21"] = int(self.get_duration_accomodation())
+        act_form_editor["Z21"] = float(self.price_accomodation_PN_text_ctrl.GetValue())
+        act_form_editor["AD24"] = float(self.total_price())
+
+        # breakfest
+        if self.breakfest_checkbox.GetValue():
+            act_form_editor["B22"] = 2
+            act_form_editor["D22"] = fr"Сніданок для {self.guest_name_text_ctrl.GetValue()}"
+            act_form_editor["U22"] = int(self.breakfest_count())
+            act_form_editor["Z22"] = float(prices_default.prices[RoomType.Breakfest])
+            act_form_editor["AD22"] = float(self.breakfest_total(wx.EVT_COMBOBOX))
+
+        # tour tax
+        if self.tour_tax_checkbox.GetValue():
+            act_form_editor["B23"] = 3
+            act_form_editor["D23"] = "Туристичний збір"
+            act_form_editor["U23"] = int(self.tour_tax_count(wx.EVT_COMBOBOX))
+            act_form_editor["Z23"] = float(prices_default.prices[RoomType.TourTax])
+            act_form_editor["AD23"] = float(self.tour_tax_total(wx.EVT_COMBOBOX))
+
+        if not self.breakfest_checkbox.GetValue():
+            act_form_editor["B23"] = 2
+            act_form_editor.delete_rows(22)
+        if not self.tour_tax_checkbox.GetValue():
+            act_form_editor.delete_rows(23)
+
+        if not os.path.exists(fr"{curr_path}\Акти надання послуг"):
+            os.makedirs(fr"{curr_path}\Акти надання послуг")
+        act_form.save(fr"{curr_path}\Акти надання послуг\Акт надання послуг № {self.numberofbill.GetValue()} {company_name} від {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}.xlsx")
+        act_form.close()
 
     # Setting price frame
     def show_settings_price_frame(self, event):
@@ -791,7 +847,6 @@ class OrderInformation:
     numberofbill: str
     company: str
     compowner: str
-    countservpos: str
     comprequs: str
 
 
