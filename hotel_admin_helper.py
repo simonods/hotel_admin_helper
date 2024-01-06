@@ -573,7 +573,7 @@ class MyFrame(wx.Frame):
         bill_form_wc_editor["E24"] = fr'Розміщення {self.guest_name_text_ctrl.GetValue()} з {self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED)} по {self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)} у категорії "{self.category.GetValue()}"'
         bill_form_wc_editor["AC24"] = int(self.get_duration_accomodation())
         bill_form_wc_editor["AH24"] = float(self.price_accomodation_PN_text_ctrl.GetValue())
-        bill_form_wc_editor["AK27"] = float(self.total_price())
+        bill_form_wc_editor["AK27"] = float(self.total_price_accomodation(wx.EVT_TEXT))
 
         # breakfest
         if self.breakfest_checkbox.GetValue():
@@ -629,6 +629,7 @@ class MyFrame(wx.Frame):
         act_form_editor.cell(row=10, column=2, value=f"АКТ надання послуг\r№ {self.numberofbill.GetValue()} від {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)} р.")
         act_form_editor.cell(row=12, column=2, value=f'Ми, що нижче підписалися, представник Замовника {company_name}, з одного боку, і представник\rВиконавця ТОВАРИСТВО З ОБМЕЖЕНОЮ ВІДПОВІДАЛЬНІСТЮ "ПАЛЕ РОЯЛЬ ОДЕСА" , з іншого\rбоку, склали цей акт про те, що на підставі наведених документів:')
         act_form_editor.cell(row=15, column=10, value=f"Рахунок на оплату № {self.numberofbill.GetValue()} від {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}")
+        act_form_editor.cell(row=24, column=30, value=self.total_price())
         act_form_editor.cell(row=28, column=2, value=fr"Загальна вартість робіт (послуг) склала {int(self.total_price())} грн. {total_price_coins} {coin_marker()} без ПДВ")
         act_form_editor.cell(row=38, column=2, value=fr"{self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)}")
         act_form_editor.cell(row=38, column=18, value=fr"{self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)}")
@@ -638,7 +639,7 @@ class MyFrame(wx.Frame):
         act_form_editor.cell(row=21, column=4, value=fr'Розміщення {self.guest_name_text_ctrl.GetValue()} з {self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED)} по {self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)} у категорії "{self.category.GetValue()}"')
         act_form_editor.cell(row=21, column=21, value=int(self.get_duration_accomodation()))
         act_form_editor.cell(row=21, column=26, value=float(self.price_accomodation_PN_text_ctrl.GetValue()))
-        act_form_editor.cell(row=21, column=30, value=float(self.total_price()))
+        act_form_editor.cell(row=21, column=30, value=float(self.total_price_accomodation(wx.EVT_TEXT)))
 
         # breakfest
         if self.breakfest_checkbox.GetValue():
