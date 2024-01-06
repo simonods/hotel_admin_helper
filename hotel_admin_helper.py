@@ -624,6 +624,7 @@ class MyFrame(wx.Frame):
                 return "копійок"
 
         # out of table
+        # git
         act_form_editor.cell(row=5, column=18, value=f"{self.company.GetValue()}")
         act_form_editor.cell(row=8, column=18, value=f"{self.compowner.GetValue()}")
         act_form_editor.cell(row=10, column=2, value=f"АКТ надання послуг\r№ {self.numberofbill.GetValue()} від {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)} р.")
