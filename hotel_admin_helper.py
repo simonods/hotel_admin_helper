@@ -225,7 +225,7 @@ class MyFrame(wx.Frame):
 
         comprequs_stat_txt = wx.StaticText(panel, label="↓ Реквізити компанії ↓")
         main_sizer.Add(comprequs_stat_txt, pos=(13, 2), flag=wx.EXPAND | wx.LEFT | wx.BOTTOM, border=10)
-        self.comprequs = wx.TextCtrl(panel)
+        self.comprequs = wx.TextCtrl(panel, style=wx.TE_MULTILINE)
         main_sizer.Add(self.comprequs, pos=(14, 2), span=(6, 2), flag=wx.EXPAND | wx.ALL, border=10)
 
         panel.SetSizer(main_sizer)
@@ -415,9 +415,9 @@ class MyFrame(wx.Frame):
 
     def services_count(self):
         counter = 1
-        if self.checkbox_tour_tax(wx.EVT_CHECKBOX):
+        if self.tour_tax_text_ctrl.GetValue():
             counter += 1
-        if self.breakfest_checkbox:
+        if self.breakfest.GetValue():
             counter += 1
         return counter
 
@@ -548,11 +548,10 @@ class MyFrame(wx.Frame):
         bill_form_wc_editor = bill_form_wc.active
 
         total_price_coins = f"{self.total_price():.2f}"[:-3:-1][::-1]
-        numbywords = num2words(int(self.total_price()), lang='uk')
-        numbywords = numbywords.capitalize()
-
         unstndrt_digit = list(range(5, 21))
         stndrt_digit = ["2", "3", "4"]
+        numbywords = num2words(int(self.total_price()), lang='uk')
+        numbywords = numbywords.capitalize()
 
         def coin_marker():
             if str(self.total_price()).endswith(str(i for i in unstndrt_digit)):
@@ -571,10 +570,10 @@ class MyFrame(wx.Frame):
         bill_form_wc_editor["C31"] = fr"{numbywords} грн. {total_price_coins} {coin_marker()}"
 
         # tables
-        bill_form_wc_editor["E24"] = fr"Розміщення {self.guest_name_text_ctrl.GetValue()} з {self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED)} по {self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)} у категорії {self.category_combobox(wx.EVT_COMBOBOX)}"
+        bill_form_wc_editor["E24"] = fr'Розміщення {self.guest_name_text_ctrl.GetValue()} з {self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED)} по {self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)} у категорії "{self.category.GetValue()}"'
         bill_form_wc_editor["AC24"] = int(self.get_duration_accomodation())
         bill_form_wc_editor["AH24"] = float(self.price_accomodation_PN_text_ctrl.GetValue())
-        bill_form_wc_editor["AK27"] = float(self.total_price())
+        bill_form_wc_editor["AK27"] = float(self.total_price_accomodation(wx.EVT_TEXT))
 
         # breakfest
         if self.breakfest_checkbox.GetValue():
@@ -595,7 +594,9 @@ class MyFrame(wx.Frame):
         if not self.breakfest_checkbox.GetValue():
             bill_form_wc_editor["C26"] = 2
             bill_form_wc_editor.delete_rows(25)
-        if not self.tour_tax_checkbox.GetValue():
+        if not self.tour_tax_checkbox.GetValue() and not self.breakfest_checkbox.GetValue():
+            bill_form_wc_editor.delete_rows(25)
+        elif not self.tour_tax_checkbox.GetValue():
             bill_form_wc_editor.delete_rows(26)
 
         if not os.path.exists(fr"{curr_path}\Безготівкові рахунки"):
@@ -604,7 +605,6 @@ class MyFrame(wx.Frame):
         bill_form_wc.close()
 
     def make_act(self, event):
-
         act_form = load_workbook(fr"{curr_path}\resourses\act_form.xlsx")
         act_form_editor = act_form.active
 
@@ -624,45 +624,68 @@ class MyFrame(wx.Frame):
                 return "копійок"
 
         # out of table
-        print(type(company_name), company_name)
-        act_form_editor["R5"] = company_name
-        act_form_editor["R8"] = self.compowner.GetValue()
-        act_form_editor["B10"] = f"АКТ надання послуг\r№ {self.numberofbill.GetValue()} від {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)} р."
-        act_form_editor["B12"] = f'Ми, що нижче підписалися, представник Замовника {company_name}, з одного боку, і представник\rВиконавця ТОВАРИСТВО З ОБМЕЖЕНОЮ ВІДПОВІДАЛЬНІСТЮ "ПАЛЕ РОЯЛЬ ОДЕСА" , з іншого\rбоку, склали цей акт про те, що на підставі наведених документів:'
-        act_form_editor["J15"] = f"Рахунок на оплату № {self.numberofbill.GetValue()} від {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}"
-        act_form_editor["B28"] = fr"Загальна вартість робіт (послуг) склала {int(self.total_price())} грн. {total_price_coins} {coin_marker()} без ПДВ"
-        act_form_editor["B35"] = fr"{self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)}"
-        act_form_editor["R35"] = fr"{self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)}"
-        act_form_editor["R36"] = self.comprequs.GetValue()
-
+        # git
+        act_form_editor.cell(row=5, column=18, value=f"{self.company.GetValue()}")
+        act_form_editor.cell(row=8, column=18, value=f"{self.compowner.GetValue()}")
+        act_form_editor.cell(row=10, column=2, value=f"АКТ надання послуг\r№ {self.numberofbill.GetValue()} від {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)} р.")
+        act_form_editor.cell(row=12, column=2, value=f'Ми, що нижче підписалися, представник Замовника {company_name}, з одного боку, і представник\rВиконавця ТОВАРИСТВО З ОБМЕЖЕНОЮ ВІДПОВІДАЛЬНІСТЮ "ПАЛЕ РОЯЛЬ ОДЕСА" , з іншого\rбоку, склали цей акт про те, що на підставі наведених документів:')
+        act_form_editor.cell(row=15, column=10, value=f"Рахунок на оплату № {self.numberofbill.GetValue()} від {self.make_date_changed(wx.adv.EVT_DATE_CHANGED)}")
+        act_form_editor.cell(row=24, column=30, value=self.total_price())
+        act_form_editor.cell(row=28, column=2, value=fr"Загальна вартість робіт (послуг) склала {int(self.total_price())} грн. {total_price_coins} {coin_marker()} без ПДВ")
+        act_form_editor.cell(row=38, column=2, value=fr"{self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)}")
+        act_form_editor.cell(row=38, column=18, value=fr"{self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)}")
+        act_form_editor.cell(row=39, column=18, value=self.comprequs.GetValue())
 
         # tables
-        act_form_editor["D21"] = fr"Розміщення {self.guest_name_text_ctrl.GetValue()} з {self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED)} по {self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)} у категорії {self.category_combobox(wx.EVT_COMBOBOX)}"
-        act_form_editor["U21"] = int(self.get_duration_accomodation())
-        act_form_editor["Z21"] = float(self.price_accomodation_PN_text_ctrl.GetValue())
-        act_form_editor["AD24"] = float(self.total_price())
+        act_form_editor.cell(row=21, column=4, value=fr'Розміщення {self.guest_name_text_ctrl.GetValue()} з {self.checkin_date_changed(wx.adv.EVT_DATE_CHANGED)} по {self.checkout_date_changed(wx.adv.EVT_DATE_CHANGED)} у категорії "{self.category.GetValue()}"')
+        act_form_editor.cell(row=21, column=21, value=int(self.get_duration_accomodation()))
+        act_form_editor.cell(row=21, column=26, value=float(self.price_accomodation_PN_text_ctrl.GetValue()))
+        act_form_editor.cell(row=21, column=30, value=float(self.total_price_accomodation(wx.EVT_TEXT)))
 
         # breakfest
         if self.breakfest_checkbox.GetValue():
-            act_form_editor["B22"] = 2
-            act_form_editor["D22"] = fr"Сніданок для {self.guest_name_text_ctrl.GetValue()}"
-            act_form_editor["U22"] = int(self.breakfest_count())
-            act_form_editor["Z22"] = float(prices_default.prices[RoomType.Breakfest])
-            act_form_editor["AD22"] = float(self.breakfest_total(wx.EVT_COMBOBOX))
+            act_form_editor.cell(row=22, column=2, value=2)
+            act_form_editor.cell(row=22, column=4, value=fr"Сніданок для {self.guest_name_text_ctrl.GetValue()}")
+            act_form_editor.cell(row=22, column=21, value=int(self.breakfest_count()))
+            act_form_editor.cell(row=22, column=26, value=float(prices_default.prices[RoomType.Breakfest]))
+            act_form_editor.cell(row=22, column=30, value=float(self.breakfest_total(wx.EVT_COMBOBOX)))
 
         # tour tax
         if self.tour_tax_checkbox.GetValue():
-            act_form_editor["B23"] = 3
-            act_form_editor["D23"] = "Туристичний збір"
-            act_form_editor["U23"] = int(self.tour_tax_count(wx.EVT_COMBOBOX))
-            act_form_editor["Z23"] = float(prices_default.prices[RoomType.TourTax])
-            act_form_editor["AD23"] = float(self.tour_tax_total(wx.EVT_COMBOBOX))
+            act_form_editor.cell(row=23, column=2, value=3)
+            act_form_editor.cell(row=23, column=4, value="Туристичний збір")
+            act_form_editor.cell(row=23, column=21, value=int(self.tour_tax_count(wx.EVT_COMBOBOX)))
+            act_form_editor.cell(row=23, column=26, value=float(prices_default.prices[RoomType.TourTax]))
+            act_form_editor.cell(row=23, column=30, value=float(self.tour_tax_total(wx.EVT_COMBOBOX)))
 
         if not self.breakfest_checkbox.GetValue():
-            act_form_editor["B23"] = 2
-            act_form_editor.delete_rows(22)
-        if not self.tour_tax_checkbox.GetValue():
-            act_form_editor.delete_rows(23)
+            act_form_editor.cell(row=22, column=2, value=2)
+            act_form_editor.cell(row=22, column=4, value="Туристичний збір")
+            act_form_editor.cell(row=22, column=21, value=self.tour_tax_count(wx.EVT_COMBOBOX))
+            act_form_editor.cell(row=22, column=26, value=prices_default.prices[RoomType.TourTax])
+            act_form_editor.cell(row=22, column=30, value=self.tour_tax_total(wx.EVT_COMBOBOX))
+            act_form_editor.cell(row=23, column=2, value="")
+            act_form_editor.cell(row=23, column=4, value="")
+            act_form_editor.cell(row=23, column=21, value="")
+            act_form_editor.cell(row=23, column=26, value="")
+            act_form_editor.cell(row=23, column=30, value="")
+        if not self.tour_tax_checkbox.GetValue() and not self.breakfest_checkbox.GetValue():
+            act_form_editor.cell(row=22, column=2, value="")
+            act_form_editor.cell(row=22, column=4, value="")
+            act_form_editor.cell(row=22, column=21, value="")
+            act_form_editor.cell(row=22, column=26, value="")
+            act_form_editor.cell(row=22, column=30, value="")
+            act_form_editor.cell(row=23, column=2, value="")
+            act_form_editor.cell(row=23, column=4, value="")
+            act_form_editor.cell(row=23, column=21, value="")
+            act_form_editor.cell(row=23, column=26, value="")
+            act_form_editor.cell(row=23, column=30, value="")
+        elif not self.tour_tax_checkbox.GetValue():
+            act_form_editor.cell(row=23, column=2, value="")
+            act_form_editor.cell(row=23, column=4, value="")
+            act_form_editor.cell(row=23, column=21, value="")
+            act_form_editor.cell(row=23, column=26, value="")
+            act_form_editor.cell(row=23, column=30, value="")
 
         if not os.path.exists(fr"{curr_path}\Акти надання послуг"):
             os.makedirs(fr"{curr_path}\Акти надання послуг")
