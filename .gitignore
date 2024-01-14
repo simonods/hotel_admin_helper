@@ -1,3 +1,19 @@
 
 /confirms/
 /bills/
+build/hotel_admin_helper/COLLECT-00.toc
+build/hotel_admin_helper/Analysis-00.toc
+build/hotel_admin_helper/base_library.zip
+build/hotel_admin_helper/EXE-00.toc
+build/hotel_admin_helper/hotel_admin_helper.exe
+build/hotel_admin_helper/hotel_admin_helper.pkg
+build/hotel_admin_helper/localpycs/pyimod01_archive.pyc
+build/hotel_admin_helper/localpycs/pyimod02_importers.pyc
+build/hotel_admin_helper/localpycs/pyimod03_ctypes.pyc
+build/hotel_admin_helper/localpycs/pyimod04_pywin32.pyc
+build/hotel_admin_helper/localpycs/struct.pyc
+build/hotel_admin_helper/PKG-00.toc
+build/hotel_admin_helper/PYZ-00.pyz
+build/hotel_admin_helper/PYZ-00.toc
+build/hotel_admin_helper/warn-hotel_admin_helper.txt
+build/hotel_admin_helper/xref-hotel_admin_helper.html
